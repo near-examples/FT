@@ -11,8 +11,8 @@ export const allowanceRegistry = new PersistentMap<AllowanceKey, Amount>('a')
 export const balanceRegistry = new PersistentMap<AccountId, Amount>('b')
 
 /**
- * Generate a consistent key format for lookup up which `owner_id` has given an `escrow_id`
- * some `allowance` to transfer on their behalf
+ * Generate a consistent key format for looking up which `owner_id` has given
+ * an `escrow_id` some `allowance` to transfer on their behalf
  * @param owner_id
  * @param escrow_id
  */
