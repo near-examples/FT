@@ -1,5 +1,6 @@
 import * as model from '../models'
 
+// these are all implicitly tested in the main tests; I don't think it adds much clarity to include these tests
 describe('interface', () => {
   it('TOTAL_SUPPLY should exist', () => {
     expect(isDefined(model.TOTAL_SUPPLY)).toBeTruthy()

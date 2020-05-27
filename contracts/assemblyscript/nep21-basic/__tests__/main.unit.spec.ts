@@ -9,6 +9,7 @@ const carol = 'carol'
 
 beforeEach(() => {
   // increase storage size to avoid InconsistentStateError(IntegerOverflow)
+  // i like this
   Context.setStorage_usage(200)
 
   // given tokens are minted to alice
@@ -32,7 +33,7 @@ afterEach(() => {
 
 // export function set_allowance(escrow_account_id: AccountId, allowance: Amount): void {
 describe('set_allowance', () => {
-  it('should change the allowance of an escrow account on owner owner', () => {
+  it('should change the allowance of an escrow account on owner', () => {
     // when alice records bob as her escrow up to `allowance`
     Context.setPredecessor_account_id(alice)
     const allowance = u128.from(100)
@@ -123,6 +124,7 @@ describe('get_balance', () => {
     }).toThrow(nonSpec.ERR_INVALID_ACCOUNT)
   })
 
+  // I agree, neither of these tests seem useful
   /* this is basically just a test of transfer()
 
   it('should reflect updates after transfer()', () => {
@@ -152,6 +154,7 @@ describe('get_balance', () => {
 })
 
 describe('get_allowance', () => {
+  // yeah, this is true for `get_access` in NFT repo as well ¯\_(ツ)_/¯
   /* not sure how to test get_allowance without testing set_allowance
 
   it("should provide the allowance an escrow has to spend of an owner's tokens", () => {

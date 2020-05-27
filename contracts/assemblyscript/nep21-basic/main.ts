@@ -3,7 +3,7 @@ import { AccountId, Amount } from './types'
 import {
   allowanceRegistry,
   balanceRegistry,
-  getAllowanceKey as keyFrom,
+  getAllowanceKey as keyFrom, // why not keep the name the same?
   TOTAL_SUPPLY,
 } from './models'
 
@@ -31,6 +31,8 @@ export function set_allowance(escrow_account_id: AccountId, allowance: Amount): 
   assert(allowance > u128.Zero, ERR_INVALID_AMOUNT)
 
   const owner_id = context.predecessor
+  // interesting...
+  // i guess an alternative would be to set key to just `owner` but to make the value a serialized object, but that seems more expensive
   allowanceRegistry.set(keyFrom(owner_id, escrow_account_id), u128.from(allowance))
 }
 
@@ -59,12 +61,13 @@ export function transfer_from(owner_id: AccountId, new_owner_id: AccountId,  amo
     const allowance = allowanceRegistry.getSome(key)
     assert(allowance >= amount, ERR_INSUFFICIENT_ESCROW_BALANCE)
 
-    allowanceRegistry.set(key, u128.sub(allowance, amount))  
+    allowanceRegistry.set(key, u128.sub(allowance, amount))
   }
 
   const balanceOfOwner = balanceRegistry.getSome(owner_id)
+  // please explain the !
   const balanceOfNewOwner = balanceRegistry.get(new_owner_id, u128.Zero)!
-  
+
   balanceRegistry.set(owner_id, u128.sub(balanceOfOwner, amount))
   balanceRegistry.set(new_owner_id, u128.add(balanceOfNewOwner, amount))
 }
@@ -77,6 +80,8 @@ export function transfer_from(owner_id: AccountId, new_owner_id: AccountId,  amo
  * @param new_owner_id
  * @param amount
  */
+// it bugs me that we have both of these when we decided we didn't need both for NFT
+// but i guess that's part of the spec
 export function transfer(new_owner_id: AccountId, amount: Amount): void {
   const owner_id = context.predecessor
   transfer_from(owner_id, new_owner_id, amount)
@@ -97,6 +102,7 @@ export function get_total_supply(): u128 {
  * Returns balance of the `owner_id` account.
  * @param owner_id
  */
+// do we need a warning similar to the one for get_allowance?
 export function get_balance(owner_id: AccountId): u128 {
   assert(balanceRegistry.contains(owner_id), ERR_INVALID_ACCOUNT)
   return balanceRegistry.getSome(owner_id)
@@ -108,6 +114,7 @@ export function get_balance(owner_id: AccountId): u128 {
  * receives this information, the allowance may already be changed by the owner.
  * So this method should only be used on the front-end to see the current allowance.
  */
+// do we need this prettier-ignore?
 // prettier-ignore
 export function get_allowance(owner_id: AccountId, escrow_account_id: AccountId): u128 {
   const key = keyFrom(owner_id, escrow_account_id)

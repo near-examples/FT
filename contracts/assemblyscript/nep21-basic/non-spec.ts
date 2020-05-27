@@ -17,6 +17,12 @@ export const ERR_TOKEN_ALREADY_MINTED = 'Token has previously been minted'
 /* NON-SPEC METHODS */
 /********************/
 
+// huh!
+// so I would have to deploy this contract then immediately call this endpoint
+//
+// * could someone malicious call it in between?
+// * could we hard-code the default token owner in another way?
+// * could we make it possible to mint more in the future? is that undesirable?
 export function mint(owner_id: AccountId): void {
   // check if previously minted
   assert(!storage.contains('minted'), ERR_TOKEN_ALREADY_MINTED)
