@@ -2,4 +2,4 @@
 tasks:
   - before: nvm use default && npm install near-shell -g --no-optional
     init: yarn && brew install tree
-    command: clear && echo Welcome to Exploring AssemblyScript Contracts with NEAR Protocol
+    command: clear && echo Hey! Check out examples of how to build a NEP-21 Fungible Token with both Rust and AssemblyScript inside the contracts folder
