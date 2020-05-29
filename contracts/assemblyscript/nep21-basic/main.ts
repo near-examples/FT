@@ -3,7 +3,7 @@ import { AccountId, Amount } from './types'
 import {
   allowanceRegistry,
   balanceRegistry,
-  getAllowanceKey as keyFrom, // why not keep the name the same?
+  getAllowanceKey as keyFrom,
   TOTAL_SUPPLY,
 } from './models'
 
@@ -26,13 +26,10 @@ import {
  * @param escrow_account_id
  * @param allowance
  */
-// prettier-ignore
 export function set_allowance(escrow_account_id: AccountId, allowance: Amount): void {
   assert(allowance > u128.Zero, ERR_INVALID_AMOUNT)
 
   const owner_id = context.predecessor
-  // interesting...
-  // i guess an alternative would be to set key to just `owner` but to make the value a serialized object, but that seems more expensive
   allowanceRegistry.set(keyFrom(owner_id, escrow_account_id), u128.from(allowance))
 }
 
@@ -48,7 +45,6 @@ export function set_allowance(escrow_account_id: AccountId, allowance: Amount): 
  * @param new_owner_id
  * @param amount
  */
-// prettier-ignore
 export function transfer_from(owner_id: AccountId, new_owner_id: AccountId,  amount: Amount): void {
   assert(amount > u128.Zero, ERR_INVALID_AMOUNT)
   assert(balanceRegistry.contains(owner_id), ERR_INVALID_ACCOUNT)
@@ -65,7 +61,6 @@ export function transfer_from(owner_id: AccountId, new_owner_id: AccountId,  amo
   }
 
   const balanceOfOwner = balanceRegistry.getSome(owner_id)
-  // please explain the !
   const balanceOfNewOwner = balanceRegistry.get(new_owner_id, u128.Zero)!
 
   balanceRegistry.set(owner_id, u128.sub(balanceOfOwner, amount))
@@ -114,8 +109,6 @@ export function get_balance(owner_id: AccountId): u128 {
  * receives this information, the allowance may already be changed by the owner.
  * So this method should only be used on the front-end to see the current allowance.
  */
-// do we need this prettier-ignore?
-// prettier-ignore
 export function get_allowance(owner_id: AccountId, escrow_account_id: AccountId): u128 {
   const key = keyFrom(owner_id, escrow_account_id)
   return allowanceRegistry.get(key, u128.Zero)!

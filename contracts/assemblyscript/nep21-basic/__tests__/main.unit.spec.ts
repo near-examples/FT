@@ -123,40 +123,9 @@ describe('get_balance', () => {
       contract.get_balance(bob)
     }).toThrow(nonSpec.ERR_INVALID_ACCOUNT)
   })
-
-  // I agree, neither of these tests seem useful
-  /* this is basically just a test of transfer()
-
-  it('should reflect updates after transfer()', () => {
-    const aliceBalanceBeforeXfer = contract.get_balance(alice)
-
-    // when we transfer tokens to bob
-    Context.setPredecessor_account_id(alice)
-    const amount = u128.from(1)
-    contract.transfer(bob, amount)
-
-    // then we should expect to see bob and alice's balances reflect the change
-    const aliceBalanceAfterXfer = contract.get_balance(alice)
-    const bobBalanceAfterXfer = contract.get_balance(bob)
-    expect(aliceBalanceAfterXfer).toBe(u128.sub(aliceBalanceBeforeXfer, amount))
-    expect(bobBalanceAfterXfer).toBe(amount)
-  })
-  */
-
-  /* seems likely that this will also just be a test of transfer_from
-
-  xit('should reflect updates after transfer_from()', () => {
-    // given alice authorizes bob as escrow up to amount
-    // when bob transfers from alice to carol
-    // then alice accounts should reflect a debit and carol's account a credit
-  })
-  */
 })
 
 describe('get_allowance', () => {
-  // yeah, this is true for `get_access` in NFT repo as well ¯\_(ツ)_/¯
-  /* not sure how to test get_allowance without testing set_allowance
-
   it("should provide the allowance an escrow has to spend of an owner's tokens", () => {
     // when alice records bob as her escrow up to `allowance`
     Context.setPredecessor_account_id(alice)
@@ -166,7 +135,6 @@ describe('get_allowance', () => {
     // then bob will appear to be authorized to transfer up to `allowance` of alice's tokens
     expect(contract.get_allowance(alice, bob)).toBe(allowance)
   })
-  */
 
   xit('should reflect updates after transfer_from()', () => {
     // given an existing allowance between escrow and owner

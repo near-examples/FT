@@ -16,7 +16,6 @@ export const balanceRegistry = new PersistentMap<AccountId, Amount>('b')
  * @param owner_id
  * @param escrow_id
  */
-// prettier-ignore
 export function getAllowanceKey(owner_id: AccountId, escrow_id: AccountId): string {
   return owner_id + ":" + escrow_id
 }
