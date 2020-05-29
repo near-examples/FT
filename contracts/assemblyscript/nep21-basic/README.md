@@ -29,6 +29,6 @@ The full implementation in Rust can be found there: https://github.com/nearproto
 - Anyone can mint tokens (!!) [in Drawbacks above it says that minting is not supported; which is it?]
 - No functions to return metadata such as the name or symbol of this FT
 
-# Notable additions that go beyond the specification of NEP#4 [contradicts Drawbacks]
+# Notable additions that go beyond the specification of NEP#21
 
 `mint_to`: the spec gives no guidance or requirements on how tokens are minted/created/assigned. If this implementation of `mint_to` is close to matching your needs, feel free to ship your FT with only minor modifications (such as caller verification).
