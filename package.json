@@ -9,7 +9,7 @@
     "build:as": "node ./contracts/assemblyscript/compile.js",
     "build:rs": "(cd contracts/rust && ./build.sh)",
     "clean": "rm -rf ./out && (cd contracts/rust && cargo clean)",
-    "test": "yarn test:unit:as && yarn test:unit:rs",
+    "test": "yarn test:unit:as",
     "test:unit:as": "asp --verbose --nologo -c contracts/assemblyscript/as-pect.config.js -f unit.spec",
     "test:unit:rs": "(cd contracts/rust && cargo test -- --nocapture --color always)"
   },
