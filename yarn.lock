@@ -1183,15 +1183,7 @@ chalk@^3.0.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-chalk@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.0.0.tgz#6e98081ed2d17faab615eb52ac66ec1fe6209e72"
-  integrity sha512-N9oWFcegS0sFr9oh1oz2d7Npos6vNoWW9HvtCg5N1KRFpUhaAhvTv5Y58g880fZaEYSNm3qDz8SU1UrGvp+n7A==
-  dependencies:
-    ansi-styles "^4.1.0"
-    supports-color "^7.1.0"
-
-chalk@^4.1.0:
+chalk@^4.0.0, chalk@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/chalk/-/chalk-4.1.0.tgz#4e14870a618d9e2edd97dd8345fd9d9dc315646a"
   integrity sha512-qwx12AxXe2Q5xQ43Ac//I6v5aXTipYrSESdOgzrN+9XjgEpyjpKuvSGaN4qE93f7TQTlerQQ8S+EQ0EyDoVL1A==
@@ -3269,10 +3261,10 @@ near-sdk-as@^0.4.1:
     semver "^7.1.3"
     visitor-as "^0.1.0"
 
-near-shell@^0.24.1:
-  version "0.24.1"
-  resolved "https://registry.yarnpkg.com/near-shell/-/near-shell-0.24.1.tgz#91ad6a6b8f84017a0419a180637e8d5b5bb99260"
-  integrity sha512-uYUvg7j9yIgke3ZB6sn4ZSovpaducT8frYv50Rki4TXDDv5Md2u1J956c95XEEWbqWZCU2q7w/7Gu5/L6LDjpA==
+near-shell@^0.24.2:
+  version "0.24.2"
+  resolved "https://registry.yarnpkg.com/near-shell/-/near-shell-0.24.2.tgz#2c8d535792c40c5db5cdef6e65fa950e1310263c"
+  integrity sha512-OB4+/38QjWcBPrp86WwVjvjGmToVAFV/2aQzghs+2Z74lXtYFFBGcTMKG+pjVrQHgPKt/GieYcvXKinJsiJ4og==
   dependencies:
     ascii-table "0.0.9"
     bn.js "^5.1.1"
