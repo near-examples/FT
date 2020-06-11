@@ -9,14 +9,14 @@
     "build:as": "node ./contracts/assemblyscript/compile.js",
     "build:rs": "(cd contracts/rust && ./build.sh)",
     "clean": "rm -rf ./out && (cd contracts/rust && cargo clean)",
-    "test": "yarn test:unit:as && yarn test:unit:rs",
+    "test": "yarn test:unit:as",
     "test:unit:as": "asp --verbose --nologo -c contracts/assemblyscript/as-pect.config.js -f unit.spec",
     "test:unit:rs": "(cd contracts/rust && cargo test -- --nocapture --color always)"
   },
   "devDependencies": {
     "jest": "^26.0.1",
     "assemblyscript": "^0.10.0",
-    "near-sdk-as": "^0.3.3",
+    "near-sdk-as": "^0.4.1",
     "near-shell": "^0.24.1"
   },
   "engines": {
