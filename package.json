@@ -3,7 +3,7 @@
   "private": true,
   "description": "Implementation of NEP21 using Rust and AssemblyScript",
   "author": "Near, Inc. <hello@near.org>",
-  "license": "MIT",
+  "license": "(MIT AND Apache-2.0)",
   "scripts": {
     "build": "yarn build:as && yarn build:rs",
     "build:as": "node ./contracts/assemblyscript/compile.js",
