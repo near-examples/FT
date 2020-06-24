@@ -19,6 +19,10 @@ Now you can run all the [AssemblyScript]-related scripts listed in `package.json
   `unit.spec`
 - `yarn build:as`: Compiles the AssemblyScript contracts to [Wasm] binaries
 
+## Data collection
+
+By using Gitpod in this project, you agree to opt-in to basic, anonymous analytics. No personal information is transmitted. Instead, these usage statistics aid in discovering potential bugs and user flow information.
+
   [yarn]: https://yarnpkg.com/
   [AssemblyScript]: https://assemblyscript.org/
   [Wasm]: https://webassembly.org/
