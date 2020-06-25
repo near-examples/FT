@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn test_new() {
+    fn test_initialize_new_token() {
         let context = get_context(carol());
         testing_env!(context);
         let total_supply = 1_000_000_000_000_000u128;
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_new_twice_fails() {
+    fn test_initialize_new_token_twice_fails() {
         let context = get_context(carol());
         testing_env!(context);
         let total_supply = 1_000_000_000_000_000u128;
@@ -331,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transfer() {
+    fn test_transfer_to_a_different_account_works() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "The new owner should be different from the current owner")]
-    fn test_transfer_fail_self() {
+    fn test_transfer_to_self_fails() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Can not increment allowance for yourself")]
-    fn test_self_inc_allowance_fail() {
+    fn test_increment_allowance_to_self_fails() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
@@ -381,7 +381,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Can not decrement allowance for yourself")]
-    fn test_self_dec_allowance_fail() {
+    fn test_decrement_allowance_to_self_fails() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
@@ -392,7 +392,7 @@ mod tests {
     }
 
     #[test]
-    fn test_saturating_dec_allowance() {
+    fn test_decrement_allowance_after_allowance_was_saturated() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
@@ -404,7 +404,7 @@ mod tests {
     }
 
     #[test]
-    fn test_saturating_inc_allowance() {
+    fn test_increment_allowance_does_not_overflow() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = std::u128::MAX;
@@ -420,7 +420,7 @@ mod tests {
     #[should_panic(
         expected = "The required attached deposit is 33100000000000000000000, but the given attached deposit is is 0"
     )]
-    fn test_self_allowance_fail_no_deposit() {
+    fn test_increment_allowance_with_insufficient_attached_deposit() {
         let mut context = get_context(carol());
         testing_env!(context.clone());
         let total_supply = 1_000_000_000_000_000u128;
