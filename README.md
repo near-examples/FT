@@ -10,6 +10,7 @@ To run this project locally:
 
 1. Prerequisites: Make sure you have Node.js ≥ 12 installed (https://nodejs.org), then use it to install [yarn]: `npm install --global yarn` (or just `npm i -g yarn`)
 2. Install dependencies: `yarn install` (or just `yarn`)
+3. Follow instructions for installing [rust] here https://docs.near.org/docs/roles/developer/contracts/near-sdk-rs#pre-requisites
 
 Now you can run all the [rust]-related scripts listed in `package.json`! Scripts you might want to start with:
 
