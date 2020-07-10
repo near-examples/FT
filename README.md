@@ -1,5 +1,5 @@
-Fungible Tokens
-===============
+Fungible Tokens (FTs)
+=====================
 
 This repository includes FT implementations in Rust and AssemblyScript for [NEP#21 - Fungible Token](https://github.com/nearprotocol/NEPs/blob/master/specs/Standards/Tokens/FungibleToken.md)
 
