@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const compile = require("near-sdk-as/compiler").compile;
 const fs = require("fs");
 const path = require("path");
@@ -25,7 +26,6 @@ function compileContract(fqPath) {
     [
       "-O3z",
       "--debug", // Shows debug output
-      "--validate", // Validate the generated wasm module
       "--measure", // shows compiler run time
       "--runPasses",
       "inlining-optimizing,dce", // inlines to optimize and removes deadcode

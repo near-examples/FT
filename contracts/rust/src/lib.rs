@@ -15,10 +15,10 @@
 *  - To prevent the deployed contract from being modified or deleted, it should not have any access
 *    keys on its account.
 */
-use borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::json_types::U128;
-use near_sdk::{env, near_bindgen, AccountId, Balance, Promise, StorageUsage};
+use near_sdk::{env, near_bindgen, wee_alloc, AccountId, Balance, Promise, StorageUsage};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -40,7 +40,10 @@ pub struct Account {
 impl Account {
     /// Initializes a new Account with 0 balance and no allowances for a given `account_hash`.
     pub fn new(account_hash: Vec<u8>) -> Self {
-        Self { balance: 0, allowances: UnorderedMap::new(account_hash) }
+        Self {
+            balance: 0,
+            allowances: UnorderedMap::new(account_hash),
+        }
     }
 
     /// Sets allowance for account `escrow_account_id` to `allowance`.
@@ -83,7 +86,10 @@ impl FungibleToken {
     pub fn new(owner_id: AccountId, total_supply: U128) -> Self {
         let total_supply = total_supply.into();
         assert!(!env::state_exists(), "Already initialized");
-        let mut ft = Self { accounts: UnorderedMap::new(b"a".to_vec()), total_supply };
+        let mut ft = Self {
+            accounts: UnorderedMap::new(b"a".to_vec()),
+            total_supply,
+        };
         let mut account = ft.get_account(&owner_id);
         account.balance = total_supply;
         ft.set_account(&owner_id, &account);
@@ -108,7 +114,10 @@ impl FungibleToken {
         }
         let mut account = self.get_account(&owner_id);
         let current_allowance = account.get_allowance(&escrow_account_id);
-        account.set_allowance(&escrow_account_id, current_allowance.saturating_add(amount.0));
+        account.set_allowance(
+            &escrow_account_id,
+            current_allowance.saturating_add(amount.0),
+        );
         self.set_account(&owner_id, &account);
         self.refund_storage(initial_storage);
     }
@@ -131,7 +140,10 @@ impl FungibleToken {
         }
         let mut account = self.get_account(&owner_id);
         let current_allowance = account.get_allowance(&escrow_account_id);
-        account.set_allowance(&escrow_account_id, current_allowance.saturating_sub(amount.0));
+        account.set_allowance(
+            &escrow_account_id,
+            current_allowance.saturating_sub(amount.0),
+        );
         self.set_account(&owner_id, &account);
         self.refund_storage(initial_storage);
     }
@@ -223,16 +235,23 @@ impl FungibleToken {
             env::is_valid_account_id(escrow_account_id.as_bytes()),
             "Escrow account ID is invalid"
         );
-        self.get_account(&owner_id).get_allowance(&escrow_account_id).into()
+        self.get_account(&owner_id)
+            .get_allowance(&escrow_account_id)
+            .into()
     }
 }
 
 impl FungibleToken {
     /// Helper method to get the account details for `owner_id`.
     fn get_account(&self, owner_id: &AccountId) -> Account {
-        assert!(env::is_valid_account_id(owner_id.as_bytes()), "Owner's account ID is invalid");
+        assert!(
+            env::is_valid_account_id(owner_id.as_bytes()),
+            "Owner's account ID is invalid"
+        );
         let account_hash = env::sha256(owner_id.as_bytes());
-        self.accounts.get(&account_hash).unwrap_or_else(|| Account::new(account_hash))
+        self.accounts
+            .get(&account_hash)
+            .unwrap_or_else(|| Account::new(account_hash))
     }
 
     /// Helper method to set the account details for `owner_id` to the state.
@@ -348,7 +367,10 @@ mod tests {
         context.is_view = true;
         context.attached_deposit = 0;
         testing_env!(context.clone());
-        assert_eq!(contract.get_balance(carol()).0, (total_supply - transfer_amount));
+        assert_eq!(
+            contract.get_balance(carol()).0,
+            (total_supply - transfer_amount)
+        );
         assert_eq!(contract.get_balance(bob()).0, transfer_amount);
     }
 
@@ -413,7 +435,10 @@ mod tests {
         testing_env!(context.clone());
         contract.inc_allowance(bob(), total_supply.into());
         contract.inc_allowance(bob(), total_supply.into());
-        assert_eq!(contract.get_allowance(carol(), bob()), std::u128::MAX.into())
+        assert_eq!(
+            contract.get_allowance(carol(), bob()),
+            std::u128::MAX.into()
+        )
     }
 
     #[test]
@@ -469,9 +494,15 @@ mod tests {
         context.is_view = true;
         context.attached_deposit = 0;
         testing_env!(context.clone());
-        assert_eq!(contract.get_balance(carol()).0, total_supply - transfer_amount);
+        assert_eq!(
+            contract.get_balance(carol()).0,
+            total_supply - transfer_amount
+        );
         assert_eq!(contract.get_balance(alice()).0, transfer_amount);
-        assert_eq!(contract.get_allowance(carol(), bob()).0, allowance - transfer_amount);
+        assert_eq!(
+            contract.get_allowance(carol(), bob()).0,
+            allowance - transfer_amount
+        );
     }
 
     #[test]
@@ -514,9 +545,15 @@ mod tests {
         context.is_view = true;
         context.attached_deposit = 0;
         testing_env!(context.clone());
-        assert_eq!(contract.get_balance(carol()).0, (total_supply - transfer_amount));
+        assert_eq!(
+            contract.get_balance(carol()).0,
+            (total_supply - transfer_amount)
+        );
         assert_eq!(contract.get_balance(alice()).0, transfer_amount);
-        assert_eq!(contract.get_allowance(carol(), bob()).0, allowance - transfer_amount);
+        assert_eq!(
+            contract.get_allowance(carol(), bob()).0,
+            allowance - transfer_amount
+        );
     }
 
     #[test]

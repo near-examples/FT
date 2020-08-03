@@ -6,8 +6,8 @@
   "license": "(MIT AND Apache-2.0)",
   "scripts": {
     "build": "yarn build:as && yarn build:rs",
-    "build:as": "node ./contracts/assemblyscript/compile.js",
-    "build:rs": "(cd contracts/rust && ./build.sh)",
+    "build:as": "./contracts/assemblyscript/build.js",
+    "build:rs": "./contracts/rust/build.js",
     "clean": "rm -rf ./out && (cd contracts/rust && cargo clean)",
     "test": "yarn test:unit:as && yarn test:unit:rs",
     "test:unit:as": "asp --verbose --nologo -c contracts/assemblyscript/as-pect.config.js -f unit.spec",
@@ -16,7 +16,8 @@
   "devDependencies": {
     "jest": "^26.2.2",
     "near-sdk-as": "^0.4.2",
-    "near-shell": "^0.24.9"
+    "near-shell": "^0.24.9",
+    "shelljs": "^0.8.4"
   },
   "engines": {
     "node": ">=12.0.0"
