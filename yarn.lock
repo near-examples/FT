@@ -381,15 +381,6 @@
     slash "^3.0.0"
     strip-ansi "^6.0.0"
 
-"@jest/environment@^26.1.0":
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/@jest/environment/-/environment-26.1.0.tgz#378853bcdd1c2443b4555ab908cfbabb851e96da"
-  integrity sha512-86+DNcGongbX7ai/KE/S3/NcUVZfrwvFzOOWX/W+OOTvTds7j07LtC+MgGydH5c8Ri3uIrvdmVgd1xFD5zt/xA==
-  dependencies:
-    "@jest/fake-timers" "^26.1.0"
-    "@jest/types" "^26.1.0"
-    jest-mock "^26.1.0"
-
 "@jest/environment@^26.2.0":
   version "26.2.0"
   resolved "https://registry.yarnpkg.com/@jest/environment/-/environment-26.2.0.tgz#f6faee1630fcc2fad208953164bccb31dbe0e45f"
@@ -399,17 +390,6 @@
     "@jest/types" "^26.2.0"
     "@types/node" "*"
     jest-mock "^26.2.0"
-
-"@jest/fake-timers@^26.1.0":
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/@jest/fake-timers/-/fake-timers-26.1.0.tgz#9a76b7a94c351cdbc0ad53e5a748789f819a65fe"
-  integrity sha512-Y5F3kBVWxhau3TJ825iuWy++BAuQzK/xEa+wD9vDH3RytW9f2DbMVodfUQC54rZDX3POqdxCgcKdgcOL0rYUpA==
-  dependencies:
-    "@jest/types" "^26.1.0"
-    "@sinonjs/fake-timers" "^6.0.1"
-    jest-message-util "^26.1.0"
-    jest-mock "^26.1.0"
-    jest-util "^26.1.0"
 
 "@jest/fake-timers@^26.2.0":
   version "26.2.0"
@@ -514,16 +494,6 @@
     slash "^3.0.0"
     source-map "^0.6.1"
     write-file-atomic "^3.0.0"
-
-"@jest/types@^26.1.0":
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/@jest/types/-/types-26.1.0.tgz#f8afaaaeeb23b5cad49dd1f7779689941dcb6057"
-  integrity sha512-GXigDDsp6ZlNMhXQDeuy/iYCDsRIHJabWtDzvnn36+aqFfG14JmFV0e/iXxY4SP9vbXSiPNOWdehU5MeqrYHBQ==
-  dependencies:
-    "@types/istanbul-lib-coverage" "^2.0.0"
-    "@types/istanbul-reports" "^1.1.1"
-    "@types/yargs" "^15.0.0"
-    chalk "^4.0.0"
 
 "@jest/types@^26.2.0":
   version "26.2.0"
@@ -2600,18 +2570,7 @@ jest-environment-jsdom@^26.2.0:
     jest-util "^26.2.0"
     jsdom "^16.2.2"
 
-jest-environment-node@^26.0.0:
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/jest-environment-node/-/jest-environment-node-26.1.0.tgz#8bb387b3eefb132eab7826f9a808e4e05618960b"
-  integrity sha512-DNm5x1aQH0iRAe9UYAkZenuzuJ69VKzDCAYISFHQ5i9e+2Tbeu2ONGY7YStubCLH8a1wdKBgqScYw85+ySxqxg==
-  dependencies:
-    "@jest/environment" "^26.1.0"
-    "@jest/fake-timers" "^26.1.0"
-    "@jest/types" "^26.1.0"
-    jest-mock "^26.1.0"
-    jest-util "^26.1.0"
-
-jest-environment-node@^26.2.0:
+jest-environment-node@^26.0.0, jest-environment-node@^26.2.0:
   version "26.2.0"
   resolved "https://registry.yarnpkg.com/jest-environment-node/-/jest-environment-node-26.2.0.tgz#fee89e06bdd4bed3f75ee2978d73ede9bb57a681"
   integrity sha512-4M5ExTYkJ19efBzkiXtBi74JqKLDciEk4CEsp5tTjWGYMrlKFQFtwIVG3tW1OGE0AlXhZjuHPwubuRYY4j4uOw==
@@ -2691,20 +2650,6 @@ jest-matcher-utils@^26.2.0:
     jest-get-type "^26.0.0"
     pretty-format "^26.2.0"
 
-jest-message-util@^26.1.0:
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/jest-message-util/-/jest-message-util-26.1.0.tgz#52573fbb8f5cea443c4d1747804d7a238a3e233c"
-  integrity sha512-dY0+UlldiAJwNDJ08SF0HdF32g9PkbF2NRK/+2iMPU40O6q+iSn1lgog/u0UH8ksWoPv0+gNq8cjhYO2MFtT0g==
-  dependencies:
-    "@babel/code-frame" "^7.0.0"
-    "@jest/types" "^26.1.0"
-    "@types/stack-utils" "^1.0.1"
-    chalk "^4.0.0"
-    graceful-fs "^4.2.4"
-    micromatch "^4.0.2"
-    slash "^3.0.0"
-    stack-utils "^2.0.2"
-
 jest-message-util@^26.2.0:
   version "26.2.0"
   resolved "https://registry.yarnpkg.com/jest-message-util/-/jest-message-util-26.2.0.tgz#757fbc1323992297092bb9016a71a2eb12fd22ea"
@@ -2718,13 +2663,6 @@ jest-message-util@^26.2.0:
     micromatch "^4.0.2"
     slash "^3.0.0"
     stack-utils "^2.0.2"
-
-jest-mock@^26.1.0:
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/jest-mock/-/jest-mock-26.1.0.tgz#80d8286da1f05a345fbad1bfd6fa49a899465d3d"
-  integrity sha512-1Rm8EIJ3ZFA8yCIie92UbxZWj9SuVmUGcyhLHyAhY6WI3NIct38nVcfOPWhJteqSn8V8e3xOMha9Ojfazfpovw==
-  dependencies:
-    "@jest/types" "^26.1.0"
 
 jest-mock@^26.2.0:
   version "26.2.0"
@@ -2853,17 +2791,6 @@ jest-snapshot@^26.2.2:
     natural-compare "^1.4.0"
     pretty-format "^26.2.0"
     semver "^7.3.2"
-
-jest-util@^26.1.0:
-  version "26.1.0"
-  resolved "https://registry.yarnpkg.com/jest-util/-/jest-util-26.1.0.tgz#80e85d4ba820decacf41a691c2042d5276e5d8d8"
-  integrity sha512-rNMOwFQevljfNGvbzNQAxdmXQ+NawW/J72dmddsK0E8vgxXCMtwQ/EH0BiWEIxh0hhMcTsxwAxINt7Lh46Uzbg==
-  dependencies:
-    "@jest/types" "^26.1.0"
-    chalk "^4.0.0"
-    graceful-fs "^4.2.4"
-    is-ci "^2.0.0"
-    micromatch "^4.0.2"
 
 jest-util@^26.2.0:
   version "26.2.0"
@@ -3326,10 +3253,10 @@ ncp@^2.0.0:
   resolved "https://registry.yarnpkg.com/ncp/-/ncp-2.0.0.tgz#195a21d6c46e361d2fb1281ba38b91e9df7bdbb3"
   integrity sha1-GVoh1sRuNh0vsSgbo4uR6d9727M=
 
-near-api-js@^0.28.0:
-  version "0.28.0"
-  resolved "https://registry.yarnpkg.com/near-api-js/-/near-api-js-0.28.0.tgz#2d209b407a4356cd10990792c1e6a7958a51b21c"
-  integrity sha512-Fq6E+turnwCmAyv3GIQSTlM5cA/wiyh89xL64FfE8fuxXD77QjT3376bkuDg/he0cnhCwLGSctXnxeFs9Q7O1g==
+near-api-js@^0.29.0:
+  version "0.29.0"
+  resolved "https://registry.yarnpkg.com/near-api-js/-/near-api-js-0.29.0.tgz#8bbd0c28b5b44e5042681fb02f09e2baf88f4f90"
+  integrity sha512-L0JZ6ClqiGOP0PYX8zLlugZTvc0m542q3FlZbaSnElkL60JyKkM5l598tPV6C9imheHsTi/aKE456DorgYVFbA==
   dependencies:
     "@types/bn.js" "^4.11.5"
     bn.js "^5.0.0"
@@ -3343,10 +3270,10 @@ near-api-js@^0.28.0:
     text-encoding-utf-8 "^1.0.2"
     tweetnacl "^1.0.1"
 
-near-cli@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/near-cli/-/near-cli-1.0.1.tgz#f261daba930b7c1dec89722c62bb5c2f276926e9"
-  integrity sha512-8+EDJXJRfHh3pzi7vSL9aPO+/Xx+iE3Z1Zuelx54SshuQOLpZMbaTO4HlYRmA2VVOAb5MWDADeMCjgSYPSHQsA==
+near-cli@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/near-cli/-/near-cli-1.0.2.tgz#109323e2bfa640f9b138b13944ecad88ea5cd196"
+  integrity sha512-DsJ7de8y0SACQT0mV32rPQfrn56IbJshFe6XPETShHen9LHAdEiWkYC4EPT8h4WjNjuFl4uTH8WwSvSKl8MGYg==
   dependencies:
     ascii-table "0.0.9"
     bn.js "^5.1.1"
@@ -3357,7 +3284,7 @@ near-cli@^1.0.0:
     jest-environment-node "^26.0.0"
     mixpanel "^0.11.0"
     ncp "^2.0.0"
-    near-api-js "^0.28.0"
+    near-api-js "^0.29.0"
     open "^7.0.1"
     rimraf "^3.0.0"
     stoppable "^1.1.0"
