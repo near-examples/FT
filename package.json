@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "jest": "^26.2.2",
-    "near-sdk-as": "^0.4.2",
+    "near-sdk-as": "^0.5.0",
     "near-cli": "^1.0.2",
     "shelljs": "^0.8.4"
   },
