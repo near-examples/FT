@@ -25,7 +25,6 @@ function compileContract(fqPath) {
     output, // output file
     [
       "-O3z",
-      "--debug", // Shows debug output
       "--measure", // shows compiler run time
       "--runPasses",
       "inlining-optimizing,dce", // inlines to optimize and removes deadcode

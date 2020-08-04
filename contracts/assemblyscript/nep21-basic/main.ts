@@ -1,4 +1,4 @@
-import { context, u128 } from 'near-sdk-as'
+import { context, storage, u128 } from 'near-sdk-as'
 import { AccountId, Amount } from './types'
 import {
   allowanceRegistry,
@@ -7,13 +7,33 @@ import {
   TOTAL_SUPPLY,
 } from './models'
 
-import {
-  ERR_INVALID_AMOUNT,
-  ERR_INVALID_ACCOUNT,
-  ERR_INVALID_ESCROW_ACCOUNT,
-  ERR_INSUFFICIENT_BALANCE,
-  ERR_INSUFFICIENT_ESCROW_BALANCE,
-} from './non-spec'
+/******************/
+/* ERROR MESSAGES */
+/******************/
+
+export const ERR_INVALID_AMOUNT = 'Allowance must be greater than zero'
+export const ERR_INVALID_ACCOUNT = 'Account not found in registry'
+export const ERR_INVALID_ESCROW_ACCOUNT = 'Escrow account not found in registry'
+export const ERR_INSUFFICIENT_BALANCE = 'Account does not have enough balance for this transaction'
+export const ERR_INSUFFICIENT_ESCROW_BALANCE = 'Escrow account does not have enough allowance for this transaction'
+export const ERR_TOKEN_ALREADY_MINTED = 'Token has previously been minted'
+
+/********************/
+/* NON-SPEC METHODS */
+/********************/
+
+const HAS_BEEN_MINTED = 'm'
+
+export function init(): void {
+  // check if previously minted
+  assert(!storage.contains(HAS_BEEN_MINTED), ERR_TOKEN_ALREADY_MINTED)
+
+  // assign ownership to 
+  balanceRegistry.set(context.sender, TOTAL_SUPPLY)
+
+  // record that minting is complete
+  storage.set(HAS_BEEN_MINTED, true)
+}
 
 /******************/
 /* CHANGE METHODS */

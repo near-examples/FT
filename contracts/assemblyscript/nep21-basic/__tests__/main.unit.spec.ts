@@ -1,7 +1,6 @@
-import { u128, VM, Context, storage } from 'near-sdk-as'
+import { u128, Context, storage } from 'near-sdk-as'
 import * as contract from '../main'
 import * as model from '../models'
-import * as nonSpec from '../non-spec'
 
 const alice = 'alice'
 const bob = 'bob'
@@ -11,9 +10,10 @@ beforeEach(() => {
   // increase storage size to avoid InconsistentStateError(IntegerOverflow)
   // i like this
   Context.setStorage_usage(200)
+  Context.setSigner_account_id(alice)
 
   // given tokens are minted to alice
-  nonSpec.mint(alice)
+  contract.init()
 })
 
 afterEach(() => {
@@ -121,7 +121,7 @@ describe('get_balance', () => {
     // any other account should throw
     expect(() => {
       contract.get_balance(bob)
-    }).toThrow(nonSpec.ERR_INVALID_ACCOUNT)
+    }).toThrow(contract.ERR_INVALID_ACCOUNT)
   })
 })
 

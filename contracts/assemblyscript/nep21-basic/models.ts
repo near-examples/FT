@@ -5,7 +5,7 @@ import { AccountId, AllowanceKey, Amount } from './types'
 /* DATA TYPES AND STORAGE */
 /**************************/
 
-export const TOTAL_SUPPLY = u128.from(10)
+export const TOTAL_SUPPLY = u128.from(100000)
 
 export const allowanceRegistry = new PersistentMap<AllowanceKey, Amount>('a')
 export const balanceRegistry = new PersistentMap<AccountId, Amount>('b')
