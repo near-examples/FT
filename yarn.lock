@@ -3326,10 +3326,10 @@ ncp@^2.0.0:
   resolved "https://registry.yarnpkg.com/ncp/-/ncp-2.0.0.tgz#195a21d6c46e361d2fb1281ba38b91e9df7bdbb3"
   integrity sha1-GVoh1sRuNh0vsSgbo4uR6d9727M=
 
-near-api-js@^0.27.0:
-  version "0.27.0"
-  resolved "https://registry.yarnpkg.com/near-api-js/-/near-api-js-0.27.0.tgz#d65d4d1059f0d8feb84a56795cb41f5b8c79d68e"
-  integrity sha512-84tNujERdEEj2uboTHd5CbaAQqOWrQfEFGs+2cdVFYWwcFvMgEMQDwXH0tRan0LRRMTlJXGDsKV8LYf37J9K7A==
+near-api-js@^0.28.0:
+  version "0.28.0"
+  resolved "https://registry.yarnpkg.com/near-api-js/-/near-api-js-0.28.0.tgz#2d209b407a4356cd10990792c1e6a7958a51b21c"
+  integrity sha512-Fq6E+turnwCmAyv3GIQSTlM5cA/wiyh89xL64FfE8fuxXD77QjT3376bkuDg/he0cnhCwLGSctXnxeFs9Q7O1g==
   dependencies:
     "@types/bn.js" "^4.11.5"
     bn.js "^5.0.0"
@@ -3342,6 +3342,33 @@ near-api-js@^0.27.0:
     node-fetch "^2.3.0"
     text-encoding-utf-8 "^1.0.2"
     tweetnacl "^1.0.1"
+
+near-cli@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/near-cli/-/near-cli-1.0.1.tgz#f261daba930b7c1dec89722c62bb5c2f276926e9"
+  integrity sha512-8+EDJXJRfHh3pzi7vSL9aPO+/Xx+iE3Z1Zuelx54SshuQOLpZMbaTO4HlYRmA2VVOAb5MWDADeMCjgSYPSHQsA==
+  dependencies:
+    ascii-table "0.0.9"
+    bn.js "^5.1.1"
+    bs58 "^4.0.1"
+    chalk "^4.0.0"
+    flagged-respawn "^1.0.1"
+    is-ci "^2.0.0"
+    jest-environment-node "^26.0.0"
+    mixpanel "^0.11.0"
+    ncp "^2.0.0"
+    near-api-js "^0.28.0"
+    open "^7.0.1"
+    rimraf "^3.0.0"
+    stoppable "^1.1.0"
+    tcp-port-used "^1.0.1"
+    update-notifier "^4.0.0"
+    uuid "^8.0.0"
+    v8flags "^3.1.3"
+    yargs "^15.0.1"
+  optionalDependencies:
+    "@ledgerhq/hw-transport-node-hid" "^5.15.0"
+    near-ledger-js "^0.1.1"
 
 near-ledger-js@^0.1.1:
   version "0.1.1"
@@ -3376,33 +3403,6 @@ near-sdk-as@^0.4.2:
     near-vm "^0.0.8"
     semver "^7.1.3"
     visitor-as "^0.1.0"
-
-near-shell@^0.24.9:
-  version "0.24.9"
-  resolved "https://registry.yarnpkg.com/near-shell/-/near-shell-0.24.9.tgz#709180e9cdbcf4f9ab7dfbec51b1dff1007769c9"
-  integrity sha512-z0qCZJNaxoUnFEoYMNUr6TUaaLqNkxhKJciaTIgmMZNHe7IaBOrfDsF2QYuqIEGoPsXs+TN1Z9QRANr1+ffncw==
-  dependencies:
-    ascii-table "0.0.9"
-    bn.js "^5.1.1"
-    bs58 "^4.0.1"
-    chalk "^4.0.0"
-    flagged-respawn "^1.0.1"
-    is-ci "^2.0.0"
-    jest-environment-node "^26.0.0"
-    mixpanel "^0.11.0"
-    ncp "^2.0.0"
-    near-api-js "^0.27.0"
-    open "^7.0.1"
-    rimraf "^3.0.0"
-    stoppable "^1.1.0"
-    tcp-port-used "^1.0.1"
-    update-notifier "^4.0.0"
-    uuid "^8.0.0"
-    v8flags "^3.1.3"
-    yargs "^15.0.1"
-  optionalDependencies:
-    "@ledgerhq/hw-transport-node-hid" "^5.15.0"
-    near-ledger-js "^0.1.1"
 
 near-vm@^0.0.8:
   version "0.0.8"
