@@ -42,3 +42,15 @@ By using Gitpod in this project, you agree to opt-in to basic, anonymous analyti
   [yarn]: https://yarnpkg.com/
   [AssemblyScript]: https://assemblyscript.org/
   [Wasm]: https://webassembly.org/
+  
+
+# Course on FTs on NEAR
+
+If you want to learn more about fungible tokens and create your own project, head over to the course on ["Building and Issuing Fungible Tokens on NEAR"](https://vitalpoint.ai/academy/building-and-issuing-fungible-tokens-on-near/). The course was created by one of our Guilds, [Vital Point AI](https://github.com/ALuhning).
+
+What you will learn
+* Fundamentals of FTs
+* NEAR enhancement proposals (NEPs) vs Ethereum Improvement Proposals (EIPs)
+* How to consult the relevant standards and specifications - specifically the NEAR Fungible Token Standard (NEP-21) and Ethereum ERC-20
+* Build a robust AssemblyScript contract (and supporting contracts) that issues and manages a Fungible Token on the NEAR blockchain
+* with a React front-end
