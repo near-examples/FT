@@ -46,7 +46,7 @@ By using Gitpod in this project, you agree to opt-in to basic, anonymous analyti
 
 # Course on FTs on NEAR
 
-If you want to learn more about fungible tokens and create your own project, head over to the course on ["Building and Issuing Fungible Tokens on NEAR"](https://vitalpoint.ai/academy/building-and-issuing-fungible-tokens-on-near/). The course was created by one of our Guilds, [Vital Point AI](https://github.com/ALuhning).
+If you want to learn more about fungible tokens and create your own project, head over to the course on ["Building and Issuing Fungible Tokens on NEAR"](https://vitalpoint.ai/academy/building-and-issuing-fungible-tokens-on-near/). The course was created by [Vital Point AI](https://github.com/ALuhning), who are part of the [NEAR Guilds Program](https://near.org/guilds/)
 
 What you will learn
 * Fundamentals of FTs
