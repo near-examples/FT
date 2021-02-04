@@ -1,4 +1,4 @@
-import { u128, VM, Context, storage } from 'near-sdk-as'
+import { u128, VMContext, storage } from 'near-sdk-as'
 import * as contract from '../main'
 import * as model from '../models'
 import * as nonSpec from '../non-spec'
@@ -10,7 +10,7 @@ const carol = 'carol'
 beforeEach(() => {
   // increase storage size to avoid InconsistentStateError(IntegerOverflow)
   // i like this
-  Context.setStorage_usage(200)
+  VMContext.setStorage_usage(200)
 
   // given tokens are minted to alice
   nonSpec.mint(alice)
@@ -35,7 +35,7 @@ afterEach(() => {
 describe('set_allowance', () => {
   it('should change the allowance of an escrow account on owner', () => {
     // when alice records bob as her escrow up to `allowance`
-    Context.setPredecessor_account_id(alice)
+    VMContext.setPredecessor_account_id(alice)
     const allowance = u128.from(100)
     contract.set_allowance(bob, allowance)
 
@@ -50,7 +50,7 @@ describe('transfer_from', () => {
     const aliceBalanceBeforeXfer = contract.get_balance(alice)
 
     // when we transfer tokens to bob
-    Context.setPredecessor_account_id(alice)
+    VMContext.setPredecessor_account_id(alice)
     const amount = u128.from(2)
     contract.transfer_from(alice, bob, amount)
 
@@ -66,12 +66,12 @@ describe('transfer_from', () => {
     const aliceBalanceBeforeXfer = contract.get_balance(alice)
 
     // when we set bob as escrow
-    Context.setPredecessor_account_id(alice)
+    VMContext.setPredecessor_account_id(alice)
     const amount = u128.from(2)
     contract.set_allowance(bob, amount)
 
     // and when bob transfers alice's tokens to carol
-    Context.setPredecessor_account_id(bob)
+    VMContext.setPredecessor_account_id(bob)
     contract.transfer_from(alice, carol, amount)
 
     // then we should expect to see bob and alice's balances reflect the change
@@ -88,7 +88,7 @@ describe('transfer', () => {
     const aliceBalanceBeforeXfer = contract.get_balance(alice)
 
     // when we transfer tokens to bob
-    Context.setPredecessor_account_id(alice)
+    VMContext.setPredecessor_account_id(alice)
     const amount = u128.from(2)
     contract.transfer(bob, amount)
 
@@ -128,7 +128,7 @@ describe('get_balance', () => {
 describe('get_allowance', () => {
   it("should provide the allowance an escrow has to spend of an owner's tokens", () => {
     // when alice records bob as her escrow up to `allowance`
-    Context.setPredecessor_account_id(alice)
+    VMContext.setPredecessor_account_id(alice)
     const allowance = u128.from(100)
     contract.set_allowance(bob, allowance)
 
