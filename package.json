@@ -6,7 +6,7 @@
   "license": "(MIT AND Apache-2.0)",
   "scripts": {
     "build": "yarn build:as && yarn build:rs",
-    "build:as": "./contracts/assemblyscript/build.js",
+    "build:as": "asb --baseDir contracts/assemblyscript",
     "build:rs": "./contracts/rust/build.js",
     "clean": "rm -rf ./out && (cd contracts/rust && cargo clean)",
     "test": "yarn test:unit:as && yarn test:unit:rs",
