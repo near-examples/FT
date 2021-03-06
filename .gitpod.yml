@@ -1,5 +1,7 @@
+image:
+  file: .gitpod.Dockerfile
 # List the start up tasks. You can start them in parallel in multiple terminals. See https://www.gitpod.io/docs/config-start-tasks/
 tasks:
-  - before: nvm use default && npm install near-cli -g --no-optional
-    init: yarn && brew install tree
+  - before: echo "nvm use default" >> ~/.bashrc && npm install -g near-cli && nvm use default
+    init: yarn
     command: clear && echo Hey! Check out examples of how to build a NEP-21 Fungible Token with both Rust and AssemblyScript inside the contracts folder
