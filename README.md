@@ -1,7 +1,9 @@
 Fungible Tokens (FTs)
 =====================
 
-This repository includes FT implementations in Rust and AssemblyScript for [NEP#21 - Fungible Token](https://github.com/nearprotocol/NEPs/blob/master/specs/Standards/Tokens/FungibleToken.md)
+This repository includes an old fungible token implementations in Rust and AssemblyScript for [NEP#21 - Fungible Token](https://github.com/near/NEPs/pull/21)
+The new NEP-141 has not been fleshed out into various examples yet, but can be understood by reading the [Nomicon Spec](https://nomicon.io/Standards/Tokens/FungibleTokenCore.html).
+There is a basic example that is a good reference implementation in the [`near-sdk-rs` examples folder](https://github.com/near/near-sdk-rs/tree/master/examples/fungible-token).
 
 # Rust
 
