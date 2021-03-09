@@ -1,7 +1,0 @@
-{
-  "extends": "near-sdk-as/asconfig.json",
-  "entry": "nep21-basic/main.ts",
-  "options": {
-    "binaryFile": "out/nep21-basic-as.wasm"
-  }
-}

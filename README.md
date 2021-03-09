@@ -1,58 +1,44 @@
-Fungible Tokens (FTs)
-=====================
+Fungible Token (FT)
+===================
 
-This repository includes an old fungible token implementations in Rust and AssemblyScript for [NEP#21 - Fungible Token](https://github.com/near/NEPs/pull/21)
-The new NEP-141 has not been fleshed out into various examples yet, but can be understood by reading the [Nomicon Spec](https://nomicon.io/Standards/Tokens/FungibleTokenCore.html).
-There is a basic example that is a good reference implementation in the [`near-sdk-rs` examples folder](https://github.com/near/near-sdk-rs/tree/master/examples/fungible-token).
+Example implementation of a [Fungible Token] contract which uses [near-contract-standards] and [simulation] tests. This is a contract-only example.
 
-# Rust
+  [Fungible Token]: https://nomicon.io/Standards/Tokens/FungibleTokenCore.html
+  [near-contract-standards]: https://github.com/near/near-sdk-rs/tree/master/near-contract-standards
+  [simulation]: https://github.com/near/near-sdk-rs/tree/master/near-sdk-sim
 
-_Using Gitpod? You can skip these setup steps!_
+## Building
 
-To run this project locally:
+Follow instructions for installing Rust here https://docs.near.org/docs/tutorials/contracts/intro-to-rust#3-step-rust-installation (if you're using Gitpod, you can skip this step).
 
-1. Prerequisites: Make sure you have Node.js ≥ 12 installed (https://nodejs.org), then use it to install [yarn]: `npm install --global yarn` (or just `npm i -g yarn`)
-2. Install dependencies: `yarn install` (or just `yarn`)
-3. Follow instructions for installing [rust] here https://docs.near.org/docs/tutorials/contracts/intro-to-rust#3-step-rust-installation
+To build run:
+```bash
+./build.sh
+```
 
-Now you can run all the [rust]-related scripts listed in `package.json`! Scripts you might want to start with:
+## Testing
 
-- `yarn test:unit:rs`: Runs all Rust tests in the project
-- `yarn build:rs`: Compiles the Rust contracts to [Wasm] binaries
+As with many Rust libraries and contracts, there are tests in the main fungible token implementation at `ft/src/lib.rs`.
+
+Additionally, this project has [simulation] tests in `tests/general.rs`. Simulation tests allow testing cross-contract calls, which is crucial to ensuring that the `ft_transfer_call` function works properly. These simulation tests are the reason this project has the file structure it does. Note that the root project has a `Cargo.toml` which sets it up as a workspace. `ft` and `test-contract-defi` are both small & focused contract projects, the latter only existing for simulation tests. The root project imports `near-sdk-sim` and tests interaction between these contracts.
+
+You can run all these tests with one command:
+
+```bash
+cargo test
+```
+
+If you want to run only simulation tests, you can use `cargo test simulation`, since all the simulation tests include "simulation" in their names.
 
 
-# AssemblyScript
+## Notes
 
-_Using Gitpod? You can skip these setup steps!_
+ - The maximum balance value is limited by U128 (`2**128 - 1`).
+ - JSON calls should pass U128 as a base-10 string. E.g. "100".
+ - This does not include escrow functionality, as `ft_transfer_call` provides a superior approach. An escrow system can, of course, be added as a separate contract or additional functionality within this contract.
 
-To run this project locally:
+## No AssemblyScript?
 
-1. Prerequisites: Make sure you have Node.js ≥ 12 installed (https://nodejs.org), then use it to install [yarn]: `npm install --global yarn` (or just `npm i -g yarn`)
-2. Install dependencies: `yarn install` (or just `yarn`)
+[near-contract-standards] is currently Rust-only. We strongly suggest using this library to create your own Fungible Token contract to ensure it works as expected.
 
-Now you can run all the [AssemblyScript]-related scripts listed in `package.json`! Scripts you might want to start with:
-
-- `yarn test:unit:as`: Runs all AssemblyScript tests with filenames ending in
-  `unit.spec`
-- `yarn build:as`: Compiles the AssemblyScript contracts to [Wasm] binaries
-
-## Data collection
-
-By using Gitpod in this project, you agree to opt-in to basic, anonymous analytics. No personal information is transmitted. Instead, these usage statistics aid in discovering potential bugs and user flow information.
-
-  [rust]: https://www.rust-lang.org/
-  [yarn]: https://yarnpkg.com/
-  [AssemblyScript]: https://assemblyscript.org/
-  [Wasm]: https://webassembly.org/
-  
-
-# Course on FTs on NEAR
-
-If you want to learn more about fungible tokens and create your own project, head over to the course on ["Building and Issuing Fungible Tokens on NEAR"](https://vitalpoint.ai/academy/building-and-issuing-fungible-tokens-on-near/). The course was created by [Vital Point AI](https://github.com/ALuhning), who are part of the [NEAR Guilds Program](https://near.org/guilds/)
-
-What you will learn
-* Fundamentals of FTs
-* NEAR enhancement proposals (NEPs) vs Ethereum Improvement Proposals (EIPs)
-* How to consult the relevant standards and specifications - specifically the NEAR Fungible Token Standard (NEP-21) and Ethereum ERC-20
-* Build a robust AssemblyScript contract (and supporting contracts) that issues and manages a Fungible Token on the NEAR blockchain
-* with a React front-end
+Someday NEAR core or community contributors may provide a similar library for AssemblyScript, at which point this example will be updated to include both a Rust and AssemblyScript version.

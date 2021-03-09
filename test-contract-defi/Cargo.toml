@@ -1,0 +1,13 @@
+[package]
+name = "defi"
+version = "0.0.1"
+authors = ["Near Inc <hello@nearprotocol.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = { git = "https://github.com/near/near-sdk-rs.git", commit="330d161b68ba80280fdbc02facd7f0744bd36d48" }
+near-contract-standards = { git = "https://github.com/near/near-sdk-rs.git", commit="330d161b68ba80280fdbc02facd7f0744bd36d48" }
+
