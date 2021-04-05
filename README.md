@@ -7,9 +7,15 @@ Example implementation of a [Fungible Token] contract which uses [near-contract-
   [near-contract-standards]: https://github.com/near/near-sdk-rs/tree/master/near-contract-standards
   [simulation]: https://github.com/near/near-sdk-rs/tree/master/near-sdk-sim
 
-## Building
+Prerequisites
+=============
 
-Follow instructions for installing Rust here https://docs.near.org/docs/tutorials/contracts/intro-to-rust#3-step-rust-installation (if you're using Gitpod, you can skip this step).
+If you're using Gitpod, you can skip this step.
+
+1. Make sure Rust is installed per the prerequisites in [`near-sdk-rs`](https://github.com/near/near-sdk-rs#pre-requisites)
+2. Ensure `near-cli` is installed by running `near --version`. If not installed, install with: `npm install -g near-cli`
+
+## Building
 
 To build run:
 ```bash
