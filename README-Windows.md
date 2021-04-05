@@ -3,6 +3,8 @@ Fungible Token (FT)
 
 Example implementation of a [Fungible Token] contract which uses [near-contract-standards] and [simulation] tests. This is a contract-only example.
 
+**Note**: this README is specific to Windows and this example. For development on OS X or Linux, please see [README.md](README.md).
+
   [Fungible Token]: https://nomicon.io/Standards/Tokens/FungibleTokenCore.html
   [near-contract-standards]: https://github.com/near/near-sdk-rs/tree/master/near-contract-standards
   [simulation]: https://github.com/near/near-sdk-rs/tree/master/near-sdk-sim
@@ -13,7 +15,7 @@ Prerequisites
 If you're using Gitpod, you can skip this step.
 
 1. Make sure Rust is installed per the prerequisites in [`near-sdk-rs`](https://github.com/near/near-sdk-rs#pre-requisites)
-2. Ensure `near-cli` is installed by running `near --version`. If not installed, install with: `npm install -g near-cli`
+2. Ensure `near-cli` is installed by running `near --version`. If not installed, install with: `npm install --global near-cli`
 
 ## Building
 
@@ -37,23 +39,23 @@ In the project root, log in to your newly created account  with `near-cli` by fo
 
 To make this tutorial easier to copy/paste, we're going to set an environment variable for your account id. In the below command, replace `MY_ACCOUNT_NAME` with the account name you just logged in with, including the `.near`:
 
-    ID=MY_ACCOUNT_NAME
+    set ID=MY_ACCOUNT_NAME
 
 You can tell if the environment variable is set correctly if your command line prints the account name after this command:
 
-    echo $ID
+    echo %ID%
 
 Now we can deploy the compiled contract in this example to your account:
 
-    near deploy --wasmFile res/fungible_token.wasm --accountId $ID
+    near deploy --wasmFile res/fungible_token.wasm --accountId %ID%
 
 FT contract should be initialized before usage. You can read more about metadata at ['nomicon.io'](https://nomicon.io/Standards/FungibleToken/Metadata.html#reference-level-explanation). Modify the parameters and create a token:
 
-    near call $ID new '{"owner_id": "'$ID'", "total_supply": "1000000000000000", "metadata": { "spec": "ft-1.0.0", "name": "Example Token Name", "symbol": "EXLT", "decimals": 8 }}' --accountId $ID
+    near call %ID% new "{\"owner_id\": \""%ID%"\", \"total_supply\": \"1000000000000000\", \"metadata\": { \"spec\": \"ft-1.0.0\", \"name\": \"Example Token Name\", \"symbol\": \"EXLT\", \"decimals\": 8 }}" --accountId %ID%
 
 Get metadata:
 
-    near view $ID ft_metadata
+    near view %ID% ft_metadata
 
 
 Transfer Example
@@ -61,15 +63,15 @@ Transfer Example
 
 Let's set up an account to transfer some tokens to. These account will be a sub-account of the NEAR account you logged in with.
 
-    near create-account bob.$ID --masterAccount $ID --initialBalance 1
+    near create-account bob.%ID% --masterAccount %ID% --initialBalance 1
 
 Check balance of Bob's account, it should be `0` for now:
 
-    near view $ID ft_balance_of '{"account_id": "'bob.$ID'"}'
+    near view %ID% ft_balance_of "{\"account_id\": \""bob.%ID%"\"}"
 
 Transfer tokens to Bob from the contract that minted these fungible tokens, exactly 1 yoctoNEAR of deposit should be attached:
 
-    near call $ID ft_transfer '{"receiver_id": "'bob.$ID'", "amount": "19"}' --accountId $ID --amount 0.000000000000000000000001
+    near call %ID% ft_transfer "{\"receiver_id\": \""bob.%ID%"\", \"amount\": "19"}" --accountId %ID% --amount 0.000000000000000000000001
 
 
 Check the balance of Bob again with the command from before and it will now return `19`.
