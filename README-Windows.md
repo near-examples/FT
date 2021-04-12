@@ -21,7 +21,8 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-./build.sh
+cd ft
+cargo build --target wasm32-unknown-unknown --release
 ```
 
 Using this contract
@@ -31,7 +32,7 @@ This smart contract will get deployed to your NEAR account. For this example, pl
 
 Switch to `mainnet`. You can skip this step to use `testnet` as a default network.
 
-    export NEAR_ENV=mainnet
+    set NEAR_ENV=mainnet
 
 In the project root, log in to your newly created account  with `near-cli` by following the instructions after this command:
 
@@ -88,7 +89,7 @@ You can run all these tests with one command:
 cargo test
 ```
 
-If you want to run only simulation tests, you can use `cargo test simulation`, since all the simulation tests include "simulation" in their names.
+If you want to run only simulation tests, you can use `cargo test simulate`, since all the simulation tests include "simulate" in their names.
 
 
 ## Notes

@@ -86,7 +86,7 @@ You can run all these tests with one command:
 cargo test
 ```
 
-If you want to run only simulation tests, you can use `cargo test simulation`, since all the simulation tests include "simulation" in their names.
+If you want to run only simulation tests, you can use `cargo test simulate`, since all the simulation tests include "simulate" in their names.
 
 
 ## Notes
