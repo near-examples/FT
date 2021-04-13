@@ -1,6 +1,6 @@
 @echo off
+
 title FT build
-cd ft
-cargo build --target wasm32-unknown-unknown --release
-copy target/wasm32-unknown-unknown/release/*.wasm ./res/
+cargo build --all --target wasm32-unknown-unknown --release
+xcopy %CD%\target\wasm32-unknown-unknown\release\*.wasm %CD%\res /Y
 pause
