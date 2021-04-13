@@ -21,7 +21,7 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-.\build.bat
+build.bat
 ```
 
 Using this contract
@@ -65,13 +65,17 @@ Let's set up an account to transfer some tokens to. These account will be a sub-
 
     near create-account bob.%ID% --masterAccount %ID% --initialBalance 1
 
+Add storage deposit for Bob's account:
+
+    near call %ID% storage_deposit '' --accountId bob.%ID% --amount 0.00125
+
 Check balance of Bob's account, it should be `0` for now:
 
     near view %ID% ft_balance_of "{\"account_id\": \""bob.%ID%"\"}"
 
 Transfer tokens to Bob from the contract that minted these fungible tokens, exactly 1 yoctoNEAR of deposit should be attached:
 
-    near call %ID% ft_transfer "{\"receiver_id\": \""bob.%ID%"\", \"amount\": "19"}" --accountId %ID% --amount 0.000000000000000000000001
+    near call %ID% ft_transfer "{\"receiver_id\": \""bob.%ID%"\", \"amount\": \"19\"}" --accountId %ID% --amount 0.000000000000000000000001
 
 
 Check the balance of Bob again with the command from before and it will now return `19`.
