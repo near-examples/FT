@@ -19,7 +19,7 @@ If you're using Gitpod, you can skip this step.
 
 ## Building
 
-To build run:
+To build run in CMD:
 ```bash
 build.bat
 ```
