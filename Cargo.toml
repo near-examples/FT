@@ -5,8 +5,8 @@ authors = ["Near Inc <hello@near.org>"]
 edition = "2018"
 
 [dev-dependencies]
-near-sdk = { git = "https://github.com/near/near-sdk-rs.git", rev="249dacdcd3fd34bc00f0895a275f33f05cd910c1" }
-near-sdk-sim = { git = "https://github.com/near/near-sdk-rs.git", rev="249dacdcd3fd34bc00f0895a275f33f05cd910c1" }
+near-sdk = "3.1.0"
+near-sdk-sim = "3.1.0"
 
 # remember to include a line for each contract
 fungible-token = { path = "./ft" }
