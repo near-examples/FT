@@ -21,8 +21,7 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-cd ft
-cargo build --target wasm32-unknown-unknown --release
+.\build.bat
 ```
 
 Using this contract
