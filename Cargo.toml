@@ -7,7 +7,6 @@ edition = "2018"
 [dev-dependencies]
 near-sdk = "3.1.0"
 near-sdk-sim = "3.1.0"
-near-contract-standards = "3.1.1"
 
 # remember to include a line for each contract
 fungible-token = { path = "./ft" }
