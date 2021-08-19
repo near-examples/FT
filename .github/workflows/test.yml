@@ -15,6 +15,9 @@ jobs:
           toolchain: stable-2020-10-08
           target: wasm32-unknown-unknown
 
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
       - name: Check that build works
         run: ./build.sh
         # TODO: check that files in `res` are unchanged
