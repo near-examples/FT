@@ -1,5 +1,7 @@
 FROM gitpod/workspace-full
 
+ENV CARGO_HOME=/home/gitpod/.cargo
+
 RUN bash -cl "rustup toolchain install stable && rustup target add wasm32-unknown-unknown"
 
 RUN bash -c ". .nvm/nvm.sh \
