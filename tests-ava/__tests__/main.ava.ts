@@ -1,4 +1,4 @@
-import { Workspace, BN, NearAccount, captureError, toYocto, NEAR, transfer, DEFAULT_FUNCTION_CALL_GAS, tGas } from 'near-workspaces-ava';
+import { Workspace, BN, NearAccount, captureError, toYocto, tGas } from 'near-workspaces-ava';
 
 async function registerUser(ft: NearAccount, user: NearAccount) {
   await user.call(
@@ -210,7 +210,7 @@ workspace.test('Transfer call when called contract not registered with ft', asyn
 
   await init_ft(ft, root, initialAmount);
   const errorString = await captureError(async () =>
-    await root.call(
+    root.call(
       ft,
       'ft_transfer_call',
       {
