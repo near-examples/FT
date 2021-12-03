@@ -28,7 +28,8 @@ async function init_ft(
       owner_id: owner,
       total_supply: supply,
     }
-  );if (registeredAccount) {
+  );
+  if (registeredAccount) {
     await registerUser(ft, registeredAccount);
   }
 }
@@ -255,7 +256,7 @@ workspace.test('Transfer call with promise and refund', async (test, { ft, defi,
   test.deepEqual(defiBalance, transferAmount.sub(refundAmount));
 });
 
-workspace.test('Transfer call promise panics for a full refund', async (test, {ft, defi, root}) => {
+workspace.test('Transfer call promise panics for a full refund', async (test, { ft, defi, root }) => {
   const initialAmount = new BN(10_000);
   const transferAmount = new BN(100);
   await init_ft(ft, root, initialAmount, defi);
@@ -268,7 +269,7 @@ workspace.test('Transfer call promise panics for a full refund', async (test, {f
       amount: transferAmount,
       msg: 'no parsey as integer big panic oh no',
     },
-    {attachedDeposit: '1', gas: tGas('150')},
+    { attachedDeposit: '1', gas: tGas('150') },
   );
   test.regex(result.promiseErrorMessages[0], /ParseIntError/);
 
