@@ -39,12 +39,12 @@ const workspace = Workspace.init(async ({ root }) => {
   // Create a subaccount of the root account, and also deploy a contract to it
   const ft = await root.createAndDeploy(
     'fungible-token',
-    'res/fungible_token.wasm',
+    '../res/fungible_token.wasm',
   );
 
   const defi = await root.createAndDeploy(
     'defi',
-    'res/defi.wasm',
+    '../res/defi.wasm',
     {
       method: 'new',
       args: { fungible_token_account_id: ft.accountId },
