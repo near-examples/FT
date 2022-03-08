@@ -817,8 +817,8 @@ dependencies = [
 name = "defi"
 version = "0.0.1"
 dependencies = [
- "near-contract-standards 3.2.0",
- "near-sdk 3.1.0",
+ "near-contract-standards",
+ "near-sdk",
 ]
 
 [[package]]
@@ -1056,8 +1056,8 @@ checksum = "2022715d62ab30faffd124d40b76f4134a550a87792276512b18d63272333394"
 name = "fungible-token"
 version = "1.0.0"
 dependencies = [
- "near-contract-standards 4.0.0-pre.7",
- "near-sdk 4.0.0-pre.7",
+ "near-contract-standards",
+ "near-sdk",
 ]
 
 [[package]]
@@ -1066,7 +1066,7 @@ version = "0.0.1"
 dependencies = [
  "defi",
  "fungible-token",
- "near-sdk 3.1.0",
+ "near-sdk",
  "near-sdk-sim",
 ]
 
@@ -1601,20 +1601,11 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7421d0a5c7aeb57b37a0cf3a71a7aefbbdc7727f9811d9dd86fa55e4f0de4d3"
-dependencies = [
- "near-sdk 3.1.0",
-]
-
-[[package]]
-name = "near-contract-standards"
 version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52c4f636adbffbd9399610cb6445894c64c6c8fcf9ea4e607021f252a1e0459f"
 dependencies = [
- "near-sdk 4.0.0-pre.7",
+ "near-sdk",
  "serde",
  "serde_json",
 ]
@@ -1887,23 +1878,6 @@ dependencies = [
 
 [[package]]
 name = "near-sdk"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7383e242d3e07bf0951e8589d6eebd7f18bb1c1fc5fbec3fad796041a6aebd1"
-dependencies = [
- "base64 0.13.0",
- "borsh 0.8.1",
- "bs58",
- "near-primitives-core 0.4.0",
- "near-sdk-macros 3.1.0",
- "near-vm-logic 4.0.0-pre.1",
- "serde",
- "serde_json",
- "wee_alloc",
-]
-
-[[package]]
-name = "near-sdk"
 version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4f17c763e91999827a2ad30b909f79e82a56c448bf7170ed72841756397e5a3"
@@ -1912,36 +1886,12 @@ dependencies = [
  "borsh 0.9.3",
  "bs58",
  "near-primitives-core 0.10.0",
- "near-sdk-macros 4.0.0-pre.7",
+ "near-sdk-macros",
  "near-sys",
  "near-vm-logic 0.10.0",
  "serde",
  "serde_json",
  "wee_alloc",
-]
-
-[[package]]
-name = "near-sdk-core"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284a78d9eb8eda58330462fa0023a6d7014c941df1f0387095e7dfd1dc0f2bce"
-dependencies = [
- "Inflector",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "near-sdk-macros"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2037337438f97d1ce5f7c896cf229dc56dacd5c01142d1ef95a7d778cde6ce7d"
-dependencies = [
- "near-sdk-core",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -1958,9 +1908,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-sim"
-version = "3.2.0"
+version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f9be539455733f5cff63febaee07dcdc48c0a9940856257a1989e84a5552d7a"
+checksum = "3bedc5bfe554835bee8e0f00801e644add7fa81b8de8867b6be1d3fb41864390"
 dependencies = [
  "funty",
  "lazy-static-include",
@@ -1968,7 +1918,7 @@ dependencies = [
  "near-pool",
  "near-primitives 0.1.0-pre.1",
  "near-runtime",
- "near-sdk 3.1.0",
+ "near-sdk",
  "near-store",
  "near-vm-logic 4.0.0-pre.1",
 ]
