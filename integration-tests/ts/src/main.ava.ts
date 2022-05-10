@@ -114,6 +114,7 @@ test("simulate_close_account_empty_balance", async (t) => {
     {},
     { attachedDeposit: "1" }
   );
+  t.true(outcome.succeeded);
   const aliceBalance: string = await ft_contract.view("ft_balance_of", {
     account_id: alice,
   });
