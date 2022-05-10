@@ -143,20 +143,17 @@ test("simulate_close_account_non_empty_balance", async (t) => {
 });
 
 test("simulate_close_account_force_non_empty_balance", async (t) => {
-    const { root, ft_contract } = t.context.accounts;
-    const outcome = await root.callRaw(
-      ft_contract,
-      "storage_unregister",
+  const { root, ft_contract } = t.context.accounts;
+  const outcome = await root.callRaw(
+    ft_contract,
+    "storage_unregister",
     { force: true },
     { attachedDeposit: "1" }
   );
   t.true(outcome.succeeded);
-    t.is(
-      outcome.logs[0],
-      `Closed @${root.accountId} with ${TOTAL_SUPPLY}`
-    );
-    const totalSupply = await ft_contract.view("ft_total_supply");
-    t.is(totalSupply, "0");
+  t.is(outcome.logs[0], `Closed @${root.accountId} with ${TOTAL_SUPPLY}`);
+  const totalSupply = await ft_contract.view("ft_total_supply");
+  t.is(totalSupply, "0");
 });
 
 test("simulate_transfer_call_with_burned_amount", async (t) => {
