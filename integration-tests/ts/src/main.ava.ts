@@ -108,7 +108,7 @@ test("simulate_simple_transfer", async (t) => {
 
 test("simulate_close_account_empty_balance", async (t) => {
   const { ft_contract, alice } = t.context.accounts;
-  await alice.call(
+  const outcome = await alice.callRaw(
     ft_contract,
     "storage_unregister",
     {},
@@ -122,8 +122,18 @@ test("simulate_close_account_empty_balance", async (t) => {
 });
 
 test("simulate_close_account_non_empty_balance", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
+  const { root, ft_contract, alice } = t.context.accounts;
+  const outcome = await root.callRaw(
+    ft_contract,
+    "storage_unregister",
+    {},
+    { attachedDeposit: "1" }
+  );
+  t.false(outcome.succeeded);
+  t.regex(
+    outcome.receiptFailureMessages.join("\n"),
+    /Can't unregister the account with the positive balance without force/
+  );
 });
 
 test("simulate_close_account_force_non_empty_balance", async (t) => {
