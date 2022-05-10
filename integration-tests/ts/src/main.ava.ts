@@ -122,7 +122,7 @@ test("simulate_close_account_empty_balance", async (t) => {
 });
 
 test("simulate_close_account_non_empty_balance", async (t) => {
-  const { root, ft_contract, alice } = t.context.accounts;
+  const { root, ft_contract } = t.context.accounts;
   const outcome = await root.callRaw(
     ft_contract,
     "storage_unregister",
