@@ -7,6 +7,8 @@ const test = anyTest as TestFn<{
 }>;
 
 const TOTAL_SUPPLY = parseNEAR("300 N");
+const DEFAULT_GAS = "30" + "0".repeat(12);
+const STORAGE = "125" + "0".repeat(22);
 
 test.beforeEach(async (t) => {
   // Init the worker and start a Sandbox server
@@ -34,6 +36,20 @@ test.beforeEach(async (t) => {
   const bob = await root.createSubAccount("bob", {
     initialBalance: NEAR.parse("30 N").toJSON(),
   });
+
+  // Register accounts with ft_contract
+  await alice.call(
+    ft_contract,
+    "storage_deposit",
+    { account_id: alice },
+    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+  );
+  await bob.call(
+    ft_contract,
+    "storage_deposit",
+    { account_id: bob },
+    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+  );
 
   // Save state for test runs, it is unique for each test
   t.context.worker = worker;
@@ -83,13 +99,25 @@ test("simulate_simple_transfer", async (t) => {
     account_id: alice,
   });
 
-  t.is((initialBalance.toBigInt() - transferAmount.toBigInt()).toString(), rootBalance);
+  t.is(
+    (initialBalance.toBigInt() - transferAmount.toBigInt()).toString(),
+    rootBalance
+  );
   t.is(transferAmount.toString(), aliceBalance);
 });
 
 test("simulate_close_account_empty_balance", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
+  const { ft_contract, alice } = t.context.accounts;
+  await alice.call(
+    ft_contract,
+    "storage_unregister",
+    {},
+    { attachedDeposit: "1" }
+  );
+  const aliceBalance: string = await ft_contract.view("ft_balance_of", {
+    account_id: alice,
+  });
+  t.is(aliceBalance, "0");
 });
 
 test("simulate_close_account_non_empty_balance", async (t) => {
