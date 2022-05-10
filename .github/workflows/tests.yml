@@ -1,0 +1,29 @@
+name: Tests
+on: 
+  repository_dispatch:
+    types: [tests-report]
+  push:
+jobs:
+  tests:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    env:
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v2
+      - name: Install Node
+        uses: actions/setup-node@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable-2020-10-08
+          target: wasm32-unknown-unknown
+      - name: Install modules
+        run: yarn
+      - name: Run unit tests
+        run: yarn test:unit
+      - name: Run integration tests
+        run: yarn test:integration
