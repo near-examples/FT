@@ -1,10 +1,12 @@
-import { Worker, NEAR, NearAccount } from "near-workspaces";
+import { Worker, NEAR, NearAccount, parseNEAR } from "near-workspaces";
 import anyTest, { TestFn } from "ava";
 
 const test = anyTest as TestFn<{
   worker: Worker;
   accounts: Record<string, NearAccount>;
 }>;
+
+const TOTAL_SUPPLY = parseNEAR("300 N");
 
 test.beforeEach(async (t) => {
   // Init the worker and start a Sandbox server
@@ -15,12 +17,14 @@ test.beforeEach(async (t) => {
   const ft_contract = await root.createAndDeploy(
     root.getSubAccount("fungible-token").accountId,
     "../../res/fungible_token.wasm",
-    { initialBalance: NEAR.parse("30 N").toJSON() }
+    {
+      method: "new_default_meta",
+      args: { owner_id: root, total_supply: TOTAL_SUPPLY },
+    }
   );
   const defi_contract = await root.createAndDeploy(
     root.getSubAccount("fungible-token").accountId,
-    "../../res/defi.wasm",
-    { initialBalance: NEAR.parse("30 N").toJSON() }
+    "../../res/defi.wasm"
   );
 
   // some test accounts
@@ -30,13 +34,16 @@ test.beforeEach(async (t) => {
   const bob = await root.createSubAccount("bob", {
     initialBalance: NEAR.parse("30 N").toJSON(),
   });
-  const charlie = await root.createSubAccount("charlie", {
-    initialBalance: NEAR.parse("30 N").toJSON(),
-  });
 
   // Save state for test runs, it is unique for each test
   t.context.worker = worker;
-  t.context.accounts = { root, ft_contract, defi_contract, alice, bob, charlie };
+  t.context.accounts = {
+    root,
+    ft_contract,
+    defi_contract,
+    alice,
+    bob,
+  };
 });
 
 test.afterEach(async (t) => {
@@ -46,37 +53,68 @@ test.afterEach(async (t) => {
   });
 });
 
-test("send one message and retrieve it", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob, charlie } = t.context.accounts;
-  t.log("Passed ✅");
-//   await root.call(ft_contract, "addMessage", { text: "aloha" });
-//   const msgs = await ft_contract.view("getMessages");
-//   const expectedMessagesResult = [
-//     {
-//       premium: false,
-//       sender: root.accountId,
-//       text: "aloha",
-//     },
-//   ];
-//   t.deepEqual(msgs, expectedMessagesResult);
+test("simulate_total_supply", async (t) => {
+  const { ft_contract } = t.context.accounts;
+  const totalSupply = await ft_contract.view("ft_total_supply");
+  t.is(totalSupply, TOTAL_SUPPLY.toString());
 });
 
-test("send two messages and expect two total", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob, charlie } = t.context.accounts;
+test("simulate_simple_transfer", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
   t.log("Passed ✅");
-//   await root.call(ft_contract, "addMessage", { text: "aloha" });
-//   await alice.call(ft_contract, "addMessage", { text: "hola" });
-//   const msgs = await ft_contract.view("getMessages");
-//   const expected = [
-//     {
-//       premium: false,
-//       sender: root.accountId,
-//       text: "aloha",
-//     },
-//     { premium: false, 
-//       sender: alice.accountId, 
-//       text: "hola" 
-//     },
-//   ];
-//   t.deepEqual(msgs, expected);
+  //   await root.call(ft_contract, "addMessage", { text: "aloha" });
+  //   await alice.call(ft_contract, "addMessage", { text: "hola" });
+  //   const msgs = await ft_contract.view("getMessages");
+  //   const expected = [
+  //     {
+  //       premium: false,
+  //       sender: root.accountId,
+  //       text: "aloha",
+  //     },
+  //     { premium: false,
+  //       sender: alice.accountId,
+  //       text: "hola"
+  //     },
+  //   ];
+  //   t.deepEqual(msgs, expected);
+});
+
+test("simulate_close_account_empty_balance", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_close_account_non_empty_balance", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_close_account_force_non_empty_balance", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_transfer_call_with_burned_amount", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_transfer_call_with_immediate_return_and_no_refund", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_transfer_call_when_called_contract_not_registered_with_ft", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_transfer_call_with_promise_and_refund", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
+});
+
+test("simulate_transfer_call_promise_panics_for_a_full_refund", async (t) => {
+  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
+  t.log("Passed ✅");
 });

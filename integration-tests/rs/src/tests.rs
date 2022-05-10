@@ -31,12 +31,6 @@ async fn main() -> anyhow::Result<()> {
     .transact()
     .await?
     .into_result()?;
-    let charlie = owner
-    .create_subaccount(&worker, "charlie")
-    .initial_balance(parse_near!("30 N"))
-    .transact()
-    .await?
-    .into_result()?;
 
     // begin tests  
     test_a(&alice, &ft_contract, &worker).await?;
