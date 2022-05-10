@@ -19,7 +19,7 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-./build.sh
+cd scripts && ./build.sh
 ```
 
 Using this contract
@@ -128,7 +128,7 @@ Additionally, this project has [simulation] tests in `tests/sim`. Simulation tes
 You can run all these tests with one command:
 
 ```bash
-cargo test
+cd scripts ./tests.sh
 ```
 
 If you want to run only simulation tests, you can use `cargo test simulate`, since all the simulation tests include "simulate" in their names.
