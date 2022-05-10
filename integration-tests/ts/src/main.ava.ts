@@ -141,10 +141,10 @@ test("simulate_close_account_force_non_empty_balance", async (t) => {
     const outcome = await root.callRaw(
       ft_contract,
       "storage_unregister",
-      {force: true},
-      { attachedDeposit: "1" }
-    );
-    t.true(outcome.succeeded);
+    { force: true },
+    { attachedDeposit: "1" }
+  );
+  t.true(outcome.succeeded);
     t.is(
       outcome.logs[0],
       `Closed @${root.accountId} with ${TOTAL_SUPPLY}`
