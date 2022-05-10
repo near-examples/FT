@@ -21,9 +21,7 @@ jobs:
         with:
           toolchain: stable-2020-10-08
           target: wasm32-unknown-unknown
-      - name: Install modules
-        run: yarn
       - name: Run unit tests
-        run: yarn test:unit
+        run: ./scripts/run_unit_tests.sh
       - name: Run integration tests
-        run: yarn test:integration
+        run: ./scripts/run_integration_tests.sh
