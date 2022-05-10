@@ -12,6 +12,7 @@ package-lock.json
 
 # testing
 /coverage
+yarn.lock
 
 # production
 /build
