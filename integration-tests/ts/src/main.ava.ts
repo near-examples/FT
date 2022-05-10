@@ -50,6 +50,12 @@ test.beforeEach(async (t) => {
     { account_id: bob },
     { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
   );
+  await defi_contract.call(
+    ft_contract,
+    "storage_deposit",
+    { account_id: defi_contract },
+    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+  );
 
   // Save state for test runs, it is unique for each test
   t.context.worker = worker;
