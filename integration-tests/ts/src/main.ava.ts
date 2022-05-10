@@ -60,23 +60,31 @@ test("simulate_total_supply", async (t) => {
 });
 
 test("simulate_simple_transfer", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
-  //   await root.call(ft_contract, "addMessage", { text: "aloha" });
-  //   await alice.call(ft_contract, "addMessage", { text: "hola" });
-  //   const msgs = await ft_contract.view("getMessages");
-  //   const expected = [
-  //     {
-  //       premium: false,
-  //       sender: root.accountId,
-  //       text: "aloha",
-  //     },
-  //     { premium: false,
-  //       sender: alice.accountId,
-  //       text: "hola"
-  //     },
-  //   ];
-  //   t.deepEqual(msgs, expected);
+  const transferAmount = parseNEAR("100");
+  const initialBalance = TOTAL_SUPPLY;
+  const { root, ft_contract, alice } = t.context.accounts;
+
+  // Transfer from root to alice
+  await root.call(
+    ft_contract,
+    "ft_transfer",
+    {
+      receiver_id: alice,
+      amount: transferAmount,
+    },
+    { gas: DEFAULT_GAS, attachedDeposit: "1" }
+  );
+
+  const rootBalance: string = await ft_contract.view("ft_balance_of", {
+    account_id: root,
+  });
+
+  const aliceBalance: string = await ft_contract.view("ft_balance_of", {
+    account_id: alice,
+  });
+
+  t.is((initialBalance.toBigInt() - transferAmount.toBigInt()).toString(), rootBalance);
+  t.is(transferAmount.toString(), aliceBalance);
 });
 
 test("simulate_close_account_empty_balance", async (t) => {
