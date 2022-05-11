@@ -22,6 +22,6 @@ jobs:
           toolchain: stable-2020-10-08
           target: wasm32-unknown-unknown
       - name: Run unit tests
-        run: cd scripts && ./unit_tests.sh
+        run: cd scripts && chmod +x unit_tests.sh && ./unit_tests.sh
       - name: Run integration tests
-        run: cd scripts && ./integration_tests.sh
+        run: cd scripts && chmod +x integration_tests.sh && ./integration_tests.sh
