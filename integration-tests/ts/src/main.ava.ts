@@ -1,4 +1,4 @@
-import { Worker, NEAR, NearAccount, parseNEAR } from "near-workspaces";
+import { Worker, NEAR, NearAccount, parseNEAR, transfer } from "near-workspaces";
 import anyTest, { TestFn } from "ava";
 
 const test = anyTest as TestFn<{
@@ -7,7 +7,7 @@ const test = anyTest as TestFn<{
 }>;
 
 const TOTAL_SUPPLY = parseNEAR("300 N");
-const DEFAULT_GAS = "30" + "0".repeat(12);
+const DEFAULT_MAX_GAS = "3" + "0".repeat(14);
 const STORAGE = "125" + "0".repeat(22);
 
 test.beforeEach(async (t) => {
@@ -46,19 +46,19 @@ test.beforeEach(async (t) => {
     ft_contract,
     "storage_deposit",
     { account_id: alice },
-    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
   );
   await bob.call(
     ft_contract,
     "storage_deposit",
     { account_id: bob },
-    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
   );
   await defi_contract.call(
     ft_contract,
     "storage_deposit",
     { account_id: defi_contract },
-    { gas: DEFAULT_GAS, attachedDeposit: STORAGE }
+    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
   );
 
   // Save state for test runs, it is unique for each test
@@ -98,7 +98,7 @@ test("simulate_simple_transfer", async (t) => {
       receiver_id: alice,
       amount: transferAmount,
     },
-    { gas: DEFAULT_GAS, attachedDeposit: "1" }
+    { gas: DEFAULT_MAX_GAS, attachedDeposit: "1" }
   );
 
   const rootBalance: string = await ft_contract.view("ft_balance_of", {
@@ -161,8 +161,33 @@ test("simulate_close_account_force_non_empty_balance", async (t) => {
 });
 
 test("simulate_transfer_call_with_burned_amount", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
+  const { root, ft_contract, defi_contract } = t.context.accounts;
+  const transferAmount = parseNEAR("10 N");
+  const outcome = await root
+    .batch(ft_contract)
+    .functionCall(
+      "ft_transfer",
+      { receiver_id: defi_contract, amount: transferAmount.toString() },
+      { gas: DEFAULT_MAX_GAS.replace("30", "15"), attachedDeposit: "1" }
+    )
+    .functionCall(
+      "storage_unregister",
+      { force: true },
+      { gas: DEFAULT_MAX_GAS.replace("30", "15"), attachedDeposit: "1" }
+    )
+    .transact();
+  t.true(outcome.succeeded);
+  t.true(
+    outcome.logs.includes(
+      `Closed @${root.accountId} with ${TOTAL_SUPPLY.sub(transferAmount).toString()}`
+    )
+  );
+  const totalSupply: string = await ft_contract.view("ft_total_supply");
+  t.is(totalSupply, transferAmount.toString());
+  const defiBalance = await ft_contract.view("ft_balance_of", {
+    account_id: defi_contract,
+  });
+  t.is(defiBalance, transferAmount.toString());
 });
 
 test("simulate_transfer_call_with_immediate_return_and_no_refund", async (t) => {
