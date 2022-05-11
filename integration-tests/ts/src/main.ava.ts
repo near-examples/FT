@@ -26,7 +26,11 @@ test.beforeEach(async (t) => {
   );
   const defi_contract = await root.createAndDeploy(
     root.getSubAccount("fungible-token").accountId,
-    "../../res/defi.wasm"
+    "../../res/defi.wasm",
+    {
+      method: "new",
+      args: { fungible_token_account_id: ft_contract }
+    }
   );
 
   // some test accounts
