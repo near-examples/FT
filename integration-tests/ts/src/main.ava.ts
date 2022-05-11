@@ -109,10 +109,7 @@ test("simulate_simple_transfer", async (t) => {
     account_id: alice,
   });
 
-  t.is(
-    (initialBalance.toBigInt() - transferAmount.toBigInt()).toString(),
-    rootBalance
-  );
+  t.is(initialBalance.sub(transferAmount).toString(), rootBalance);
   t.is(transferAmount.toString(), aliceBalance);
 });
 
@@ -191,8 +188,24 @@ test("simulate_transfer_call_with_burned_amount", async (t) => {
 });
 
 test("simulate_transfer_call_with_immediate_return_and_no_refund", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
+  // TODO
+  const { root, ft_contract, defi_contract } = t.context.accounts;
+  const transferAmount = parseNEAR("10 N");
+  const initialBalance = TOTAL_SUPPLY;
+  const outcome = await root.callRaw(
+    ft_contract,
+    "ft_transfer_call",
+    { receiver_id: defi_contract, amount: transferAmount.toString(), msg: null, memo: "take-my-money" },
+    { gas: DEFAULT_MAX_GAS, attachedDeposit: "1" }
+  );
+  t.log(outcome);
+  t.log(outcome.logs);
+  t.log(outcome.receiptFailureMessages.join("\n"));
+  t.true(outcome.succeeded);
+  const rootBalance: string = await ft_contract.view("ft_balance_of", { account_id: root });
+  const defiBalance: string = await ft_contract.view("ft_balance_of", { account_id: defi_contract });
+  t.assert(initialBalance.sub(transferAmount).toString(), rootBalance);
+  t.assert(transferAmount, defiBalance);
 });
 
 test("simulate_transfer_call_when_called_contract_not_registered_with_ft", async (t) => {
