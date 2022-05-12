@@ -1,224 +1,261 @@
-import { Worker, NEAR, NearAccount, parseNEAR, transfer } from "near-workspaces";
-import anyTest, { TestFn } from "ava";
+/**
+ * This tests the behavior of the standard FT contract at
+ * https://github.com/near/near-sdk-rs/tree/master/examples/fungible-token
+ *
+ * Some advanced features of near-workspaces this shows off:
+ *
+ * - Cross-Contract Calls: the "defi" contract implements basic features that
+ *   might be used by a marketplace contract. You can see its source code at the
+ *   near-sdk-rs link above. Several FT methods make cross-contract calls, and
+ *   these are tested below using this "defi" contract.
+ *
+ * - Complex transactions: to exercise certain edge cases of the FT standard,
+ *   tests below initiate chains of transactions using near-workspaces's transaction
+ *   builder. Search for `batch` below.
+ */
+import { Worker, NearAccount, captureError, NEAR, BN } from 'near-workspaces';
+import anyTest, { TestFn } from 'ava';
+
+const STORAGE_BYTE_COST = '1.5 mN';
+
+async function init_ft(
+    ft: NearAccount,
+    owner: NearAccount,
+    supply: BN | string = '10000',
+) {
+    await ft.call(ft, 'new_default_meta', {
+        owner_id: owner,
+        total_supply: supply,
+    });
+}
+
+async function init_defi(defi: NearAccount, ft: NearAccount) {
+    await defi.call(defi, 'new', {
+        fungible_token_account_id: ft,
+    });
+}
+
+async function registerUser(ft: NearAccount, user: NearAccount) {
+    await user.call(
+        ft,
+        'storage_deposit',
+        { account_id: user },
+        // Deposit pulled from ported sim test
+        { attachedDeposit: STORAGE_BYTE_COST },
+    );
+}
+
+async function ft_balance_of(ft: NearAccount, user: NearAccount): Promise<BN> {
+    return new BN(await ft.view('ft_balance_of', { account_id: user }));
+}
 
 const test = anyTest as TestFn<{
-  worker: Worker;
-  accounts: Record<string, NearAccount>;
+    worker: Worker;
+    accounts: Record<string, NearAccount>;
 }>;
 
-const TOTAL_SUPPLY = parseNEAR("300 N");
-const DEFAULT_MAX_GAS = "3" + "0".repeat(14);
-const STORAGE = "125" + "0".repeat(22);
+test.beforeEach(async t => {
+    const worker = await Worker.init();
+    const root = worker.rootAccount;
+    const ft = await root.createAndDeploy(
+        root.getSubAccount('fungible-token').accountId,
+        "../../res/fungible_token.wasm",
+        { initialBalance: NEAR.parse('3 N').toJSON() },
+    );
+    const defi = await root.createAndDeploy(
+        root.getSubAccount('defi').accountId,
+        '../../res/defi.wasm',
+        { initialBalance: NEAR.parse('3 N').toJSON() },
+    );
+    const ali = await root.createSubAccount('ali', { initialBalance: NEAR.parse('1 N').toJSON() });
 
-test.beforeEach(async (t) => {
-  // Init the worker and start a Sandbox server
-  const worker = await Worker.init();
-
-  // deploy contract
-  const root = worker.rootAccount;
-  const ft_contract = await root.createAndDeploy(
-    root.getSubAccount("fungible-token").accountId,
-    "../../res/fungible_token.wasm",
-    {
-      method: "new_default_meta",
-      args: { owner_id: root, total_supply: TOTAL_SUPPLY },
-    }
-  );
-  const defi_contract = await root.createAndDeploy(
-    root.getSubAccount("fungible-token").accountId,
-    "../../res/defi.wasm",
-    {
-      method: "new",
-      args: { fungible_token_account_id: ft_contract }
-    }
-  );
-
-  // some test accounts
-  const alice = await root.createSubAccount("alice", {
-    initialBalance: NEAR.parse("30 N").toJSON(),
-  });
-  const bob = await root.createSubAccount("bob", {
-    initialBalance: NEAR.parse("30 N").toJSON(),
-  });
-
-  // Register accounts with ft_contract
-  await alice.call(
-    ft_contract,
-    "storage_deposit",
-    { account_id: alice },
-    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
-  );
-  await bob.call(
-    ft_contract,
-    "storage_deposit",
-    { account_id: bob },
-    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
-  );
-  await defi_contract.call(
-    ft_contract,
-    "storage_deposit",
-    { account_id: defi_contract },
-    { gas: DEFAULT_MAX_GAS, attachedDeposit: STORAGE }
-  );
-
-  // Save state for test runs, it is unique for each test
-  t.context.worker = worker;
-  t.context.accounts = {
-    root,
-    ft_contract,
-    defi_contract,
-    alice,
-    bob,
-  };
+    t.context.worker = worker;
+    t.context.accounts = { root, ft, defi, ali };
 });
 
-test.afterEach(async (t) => {
-  // Stop Sandbox server
-  await t.context.worker.tearDown().catch((error) => {
-    console.log("Failed to stop the Sandbox:", error);
-  });
+test.afterEach(async t => {
+    await t.context.worker.tearDown().catch(error => {
+        console.log('Failed to tear down the worker:', error);
+    });
 });
 
-test("simulate_total_supply", async (t) => {
-  const { ft_contract } = t.context.accounts;
-  const totalSupply = await ft_contract.view("ft_total_supply");
-  t.is(totalSupply, TOTAL_SUPPLY.toString());
+test('Total supply', async t => {
+    const { ft, ali } = t.context.accounts;
+    await init_ft(ft, ali, '1000');
+
+    const totalSupply: string = await ft.view('ft_total_supply');
+    t.is(totalSupply, '1000');
 });
 
-test("simulate_simple_transfer", async (t) => {
-  const transferAmount = parseNEAR("100");
-  const initialBalance = TOTAL_SUPPLY;
-  const { root, ft_contract, alice } = t.context.accounts;
+test('Simple transfer', async t => {
+    const { ft, ali, root } = t.context.accounts;
+    const initialAmount = new BN('10000');
+    const transferAmount = new BN('100');
+    await init_ft(ft, root, initialAmount);
 
-  // Transfer from root to alice
-  await root.call(
-    ft_contract,
-    "ft_transfer",
-    {
-      receiver_id: alice,
-      amount: transferAmount,
-    },
-    { gas: DEFAULT_MAX_GAS, attachedDeposit: "1" }
-  );
+    // Register by prepaying for storage.
+    await registerUser(ft, ali);
 
-  const rootBalance: string = await ft_contract.view("ft_balance_of", {
-    account_id: root,
-  });
+    await root.call(
+        ft,
+        'ft_transfer',
+        {
+            receiver_id: ali,
+            amount: transferAmount,
+        },
+        { attachedDeposit: '1' },
+    );
 
-  const aliceBalance: string = await ft_contract.view("ft_balance_of", {
-    account_id: alice,
-  });
+    const rootBalance = await ft_balance_of(ft, root);
+    const aliBalance = await ft_balance_of(ft, ali);
 
-  t.is(initialBalance.sub(transferAmount).toString(), rootBalance);
-  t.is(transferAmount.toString(), aliceBalance);
+    t.deepEqual(new BN(rootBalance), initialAmount.sub(transferAmount));
+    t.deepEqual(new BN(aliBalance), transferAmount);
 });
 
-test("simulate_close_account_empty_balance", async (t) => {
-  const { ft_contract, alice } = t.context.accounts;
-  const outcome = await alice.callRaw(
-    ft_contract,
-    "storage_unregister",
-    {},
-    { attachedDeposit: "1" }
-  );
-  t.true(outcome.succeeded);
-  const aliceBalance: string = await ft_contract.view("ft_balance_of", {
-    account_id: alice,
-  });
-  t.is(aliceBalance, "0");
+test('Can close empty balance account', async t => {
+    const { ft, ali, root } = t.context.accounts;
+    await init_ft(ft, root);
+
+    await registerUser(ft, ali);
+
+    const result = await ali.call(
+        ft,
+        'storage_unregister',
+        {},
+        { attachedDeposit: '1' },
+    );
+
+    t.is(result, true);
 });
 
-test("simulate_close_account_non_empty_balance", async (t) => {
-  const { root, ft_contract } = t.context.accounts;
-  const outcome = await root.callRaw(
-    ft_contract,
-    "storage_unregister",
-    {},
-    { attachedDeposit: "1" }
-  );
-  t.false(outcome.succeeded);
-  t.regex(
-    outcome.receiptFailureMessages.join("\n"),
-    /Can't unregister the account with the positive balance without force/
-  );
+test('Can force close non-empty balance account', async t => {
+    const { ft, root } = t.context.accounts;
+
+    await init_ft(ft, root, '100');
+
+    const errorString = await captureError(async () =>
+        root.call(ft, 'storage_unregister', {}, { attachedDeposit: '1' }));
+    t.regex(errorString, /Can't unregister the account with the positive balance without force/);
+
+    const result = await root.callRaw(
+        ft,
+        'storage_unregister',
+        { force: true },
+        { attachedDeposit: '1' },
+    );
+
+    t.is(result.logs[0],
+        `Closed @${root.accountId} with 100`,
+    );
 });
 
-test("simulate_close_account_force_non_empty_balance", async (t) => {
-  const { root, ft_contract } = t.context.accounts;
-  const outcome = await root.callRaw(
-    ft_contract,
-    "storage_unregister",
-    { force: true },
-    { attachedDeposit: "1" }
-  );
-  t.true(outcome.succeeded);
-  t.is(outcome.logs[0], `Closed @${root.accountId} with ${TOTAL_SUPPLY}`);
-  const totalSupply = await ft_contract.view("ft_total_supply");
-  t.is(totalSupply, "0");
+test('Transfer call with burned amount', async t => {
+    const { ft, defi, root } = t.context.accounts;
+
+    const initialAmount = new BN(10_000);
+    const transferAmount = new BN(100);
+    const burnAmount = new BN(10);
+    await init_ft(ft, root, initialAmount);
+    await init_defi(defi, ft);
+
+    await registerUser(ft, defi);
+    const result = await root
+        .batch(ft)
+        .functionCall(
+            'ft_transfer_call',
+            {
+                receiver_id: defi,
+                amount: transferAmount,
+                msg: burnAmount,
+            },
+            { attachedDeposit: '1', gas: '150 Tgas' },
+        )
+        .functionCall(
+            'storage_unregister',
+            { force: true },
+            { attachedDeposit: '1', gas: '150 Tgas' },
+        )
+        .transact();
+
+    t.true(result.logs.includes(
+        `Closed @${root.accountId} with ${(initialAmount.sub(transferAmount)).toString()}`,
+    ));
+
+    t.is(result.parseResult(), true);
+
+    t.true(result.logs.includes(
+        'The account of the sender was deleted',
+    ));
+
+    t.true(result.logs.includes(
+        `Account @${root.accountId} burned ${burnAmount.toString()}`,
+    ));
+
+    // Help: this index is diff from sim, we have 10 len when they have 4
+    const callbackOutcome = result.receipts_outcomes[5];
+    t.is(callbackOutcome.parseResult(), transferAmount.toString());
+    const expectedAmount = transferAmount.sub(burnAmount);
+    const totalSupply: string = await ft.view('ft_total_supply');
+    t.is(totalSupply, expectedAmount.toString());
+    const defiBalance = await ft_balance_of(ft, defi);
+    t.deepEqual(defiBalance, expectedAmount);
 });
 
-test("simulate_transfer_call_with_burned_amount", async (t) => {
-  const { root, ft_contract, defi_contract } = t.context.accounts;
-  const transferAmount = parseNEAR("10 N");
-  const outcome = await root
-    .batch(ft_contract)
-    .functionCall(
-      "ft_transfer",
-      { receiver_id: defi_contract, amount: transferAmount.toString() },
-      { gas: DEFAULT_MAX_GAS.replace("30", "15"), attachedDeposit: "1" }
-    )
-    .functionCall(
-      "storage_unregister",
-      { force: true },
-      { gas: DEFAULT_MAX_GAS.replace("30", "15"), attachedDeposit: "1" }
-    )
-    .transact();
-  t.true(outcome.succeeded);
-  t.true(
-    outcome.logs.includes(
-      `Closed @${root.accountId} with ${TOTAL_SUPPLY.sub(transferAmount).toString()}`
-    )
-  );
-  const totalSupply: string = await ft_contract.view("ft_total_supply");
-  t.is(totalSupply, transferAmount.toString());
-  const defiBalance = await ft_contract.view("ft_balance_of", {
-    account_id: defi_contract,
-  });
-  t.is(defiBalance, transferAmount.toString());
+test('Transfer call immediate return no refund', async t => {
+    const { ft, defi, root } = t.context.accounts;
+    const initialAmount = new BN(10_000);
+    const transferAmount = new BN(100);
+    await init_ft(ft, root, initialAmount);
+    await init_defi(defi, ft);
+
+    await registerUser(ft, defi);
+
+    await root.call(
+        ft,
+        'ft_transfer_call',
+        {
+            receiver_id: defi,
+            amount: transferAmount,
+            memo: null,
+            msg: 'take-my-money',
+        },
+        { attachedDeposit: '1', gas: '150 Tgas' },
+    );
+
+    const rootBalance = await ft_balance_of(ft, root);
+    const defiBalance = await ft_balance_of(ft, defi);
+
+    t.deepEqual(rootBalance, initialAmount.sub(transferAmount));
+    t.deepEqual(defiBalance, transferAmount);
 });
 
-test("simulate_transfer_call_with_immediate_return_and_no_refund", async (t) => {
-  // TODO
-  const { root, ft_contract, defi_contract } = t.context.accounts;
-  const transferAmount = parseNEAR("10 N");
-  const initialBalance = TOTAL_SUPPLY;
-  const outcome = await root.callRaw(
-    ft_contract,
-    "ft_transfer_call",
-    { receiver_id: defi_contract, amount: transferAmount.toString(), msg: null, memo: "take-my-money" },
-    { gas: DEFAULT_MAX_GAS, attachedDeposit: "1" }
-  );
-  t.log(outcome);
-  t.log(outcome.logs);
-  t.log(outcome.receiptFailureMessages.join("\n"));
-  t.true(outcome.succeeded);
-  const rootBalance: string = await ft_contract.view("ft_balance_of", { account_id: root });
-  const defiBalance: string = await ft_contract.view("ft_balance_of", { account_id: defi_contract });
-  t.assert(initialBalance.sub(transferAmount).toString(), rootBalance);
-  t.assert(transferAmount, defiBalance);
-});
+test('Transfer call promise panics for a full refund', async t => {
+    const { ft, defi, root } = t.context.accounts;
+    const initialAmount = new BN(10_000);
+    const transferAmount = new BN(100);
+    await init_ft(ft, root, initialAmount);
+    await init_defi(defi, ft);
 
-test("simulate_transfer_call_when_called_contract_not_registered_with_ft", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
-});
+    await registerUser(ft, defi);
 
-test("simulate_transfer_call_with_promise_and_refund", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
-});
+    const result = await root.callRaw(
+        ft,
+        'ft_transfer_call',
+        {
+            receiver_id: defi,
+            amount: transferAmount,
+            memo: null,
+            msg: 'this won\'t parse as an integer',
+        },
+        { attachedDeposit: '1', gas: '150 Tgas' },
+    );
 
-test("simulate_transfer_call_promise_panics_for_a_full_refund", async (t) => {
-  const { root, ft_contract, defi_contract, alice, bob } = t.context.accounts;
-  t.log("Passed ✅");
+    t.regex(result.receiptFailureMessages.join('\n'), /ParseIntError/);
+
+    const rootBalance = await ft_balance_of(ft, root);
+    const defiBalance = await ft_balance_of(ft, defi);
+
+    t.deepEqual(rootBalance, initialAmount);
+    t.assert(defiBalance.isZero(), `Expected zero got ${defiBalance.toJSON()}`);
 });
