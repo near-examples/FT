@@ -2,6 +2,8 @@ use serde_json::json;
 use near_units::parse_near;
 use workspaces::prelude::*; 
 use workspaces::{network::Sandbox, Account, Contract, Worker};
+use workspaces::result::CallExecutionDetails;
+use near_sdk::json_types::U128;
 
 const DEFI_WASM_FILEPATH: &str = "../../res/defi.wasm";
 const FT_WASM_FILEPATH: &str = "../../res/fungible_token.wasm";
@@ -32,17 +34,46 @@ async fn main() -> anyhow::Result<()> {
     .await?
     .into_result()?;
 
-    // begin tests  
-    test_a(&alice, &ft_contract, &worker).await?;
-    // test_b(&alice, &owner, &contract, &worker).await?;
-    Ok(())
-}   
+    // Initialize contracts
+    ft_contract.call(&worker, "new_default_meta")
+    .args_json(serde_json::json!({
+        "owner_id": owner.id(),
+        "total_supply": parse_near!("1,000,000,000 N").to_string(),
+    }))?
+    .transact()
+    .await?;
+    defi_contract.call(&worker, "new")
+    .args_json(serde_json::json!({
+        "fungible_token_account_id": ft_contract.id()
+    }))?
+    .transact()
+    .await?;
+    defi_contract.as_account().call(&worker, ft_contract.id(), "storage_deposit")
+    .args_json(serde_json::json!({
+        "account_id": defi_contract.id()
+    }))?
+    .deposit(parse_near!("0.008 N"))
+    .transact()
+    .await?;
 
-async fn test_a(
-    user: &Account,
+    // begin tests  
+    test_total_supply(&owner, &ft_contract, &worker).await?;
+    Ok(())
+}
+
+async fn test_total_supply(
+    owner: &Account,
     contract: &Contract,
     worker: &Worker<Sandbox>,
 ) -> anyhow::Result<()> {
-    println!("      Passed ✅ test 1");
+    let initial_balance = U128::from(parse_near!("1,000,000,000 N"));
+    let res: U128 = owner
+                .call(&worker, contract.id(), "ft_total_supply")
+                .args_json(json!({}))?
+                .transact()
+                .await?
+                .json()?;
+    assert_eq!(res, initial_balance);
+    println!("      Passed ✅ test_total_supply");
     Ok(())
 }
