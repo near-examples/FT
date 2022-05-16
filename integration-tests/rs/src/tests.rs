@@ -58,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
 
     // begin tests  
     test_total_supply(&owner, &ft_contract, &worker).await?;
+    test_simple_transfer(&owner, &alice, &ft_contract, &worker).await?;
     Ok(())
 }
 
@@ -75,5 +76,55 @@ async fn test_total_supply(
                 .json()?;
     assert_eq!(res, initial_balance);
     println!("      Passed ✅ test_total_supply");
+    Ok(())
+}
+
+async fn test_simple_transfer(
+    owner: &Account,
+    user: &Account,
+    contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let transfer_amount = U128::from(parse_near!("1,000 N"));
+
+    // register user 
+    user.call(&worker, contract.id(), "storage_deposit")
+        .args_json(serde_json::json!({
+            "account_id": user.id()
+        }))?
+        .deposit(parse_near!("0.008 N"))
+        .transact()
+        .await?;
+
+    // transfer ft 
+    owner.call(&worker, contract.id(), "ft_transfer")
+        .args_json(serde_json::json!({
+            "receiver_id": user.id(),
+            "amount": transfer_amount
+        }))?
+        .deposit(1)
+        .transact()
+        .await?;
+
+    let root_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
+        .args_json(serde_json::json!({
+            "account_id": owner.id()
+        }))?
+        .transact()
+        .await?
+        .json()?;
+    
+        let alice_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
+        .args_json(serde_json::json!({
+            "account_id": user.id()
+        }))?
+        .transact()
+        .await?
+        .json()?;
+
+    assert_eq!(root_balance,  U128::from(parse_near!("999,999,000 N")));
+    assert_eq!(alice_balance, transfer_amount);
+
+    println!("      Passed ✅ test_simple_transfer");
     Ok(())
 }
