@@ -2,7 +2,6 @@ use serde_json::json;
 use near_units::parse_near;
 use workspaces::prelude::*; 
 use workspaces::{network::Sandbox, Account, Contract, Worker};
-use workspaces::result::CallExecutionDetails;
 use near_sdk::json_types::U128;
 
 const DEFI_WASM_FILEPATH: &str = "../../res/defi.wasm";
@@ -22,43 +21,44 @@ async fn main() -> anyhow::Result<()> {
     // create accounts
     let owner = worker.root_account();
     let alice = owner
-    .create_subaccount(&worker, "alice")
-    .initial_balance(parse_near!("30 N"))
-    .transact()
-    .await?
-    .into_result()?;
+        .create_subaccount(&worker, "alice")
+        .initial_balance(parse_near!("30 N"))
+        .transact()
+        .await?
+        .into_result()?;
     let bob = owner
-    .create_subaccount(&worker, "bob")
-    .initial_balance(parse_near!("30 N"))
-    .transact()
-    .await?
-    .into_result()?;
+        .create_subaccount(&worker, "bob")
+        .initial_balance(parse_near!("30 N"))
+        .transact()
+        .await?
+        .into_result()?;
 
     // Initialize contracts
     ft_contract.call(&worker, "new_default_meta")
-    .args_json(serde_json::json!({
-        "owner_id": owner.id(),
-        "total_supply": parse_near!("1,000,000,000 N").to_string(),
-    }))?
-    .transact()
-    .await?;
+        .args_json(serde_json::json!({
+            "owner_id": owner.id(),
+            "total_supply": parse_near!("1,000,000,000 N").to_string(),
+        }))?
+        .transact()
+        .await?;
     defi_contract.call(&worker, "new")
-    .args_json(serde_json::json!({
-        "fungible_token_account_id": ft_contract.id()
-    }))?
-    .transact()
-    .await?;
+        .args_json(serde_json::json!({
+            "fungible_token_account_id": ft_contract.id()
+        }))?
+        .transact()
+        .await?;
     defi_contract.as_account().call(&worker, ft_contract.id(), "storage_deposit")
-    .args_json(serde_json::json!({
-        "account_id": defi_contract.id()
-    }))?
-    .deposit(parse_near!("0.008 N"))
-    .transact()
-    .await?;
+        .args_json(serde_json::json!({
+            "account_id": defi_contract.id()
+        }))?
+        .deposit(parse_near!("0.008 N"))
+        .transact()
+        .await?;
 
     // begin tests  
     test_total_supply(&owner, &ft_contract, &worker).await?;
     test_simple_transfer(&owner, &alice, &ft_contract, &worker).await?;
+    test_can_close_empty_balance_account(&bob, &ft_contract, &worker).await?;
     Ok(())
 }
 
@@ -114,7 +114,7 @@ async fn test_simple_transfer(
         .await?
         .json()?;
     
-        let alice_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
+    let alice_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
         .args_json(serde_json::json!({
             "account_id": user.id()
         }))?
@@ -126,5 +126,32 @@ async fn test_simple_transfer(
     assert_eq!(alice_balance, transfer_amount);
 
     println!("      Passed ✅ test_simple_transfer");
+    Ok(())
+}
+
+async fn test_can_close_empty_balance_account(
+    user: &Account,
+    contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+
+    // register user 
+    user.call(&worker, contract.id(), "storage_deposit")
+        .args_json(serde_json::json!({
+            "account_id": user.id()
+        }))?
+        .deposit(parse_near!("0.008 N"))
+        .transact()
+        .await?;
+
+    let result: bool = user.call(&worker, contract.id(), "storage_unregister")
+        .args_json(serde_json::json!({}))?
+        .deposit(1)
+        .transact()
+        .await?
+        .json()?;
+
+    assert_eq!(result, true);
+    println!("      Passed ✅ can_close_empty_balance_account");
     Ok(())
 }
