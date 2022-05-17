@@ -1,18 +1,18 @@
-use serde_json::json;
-use near_units::parse_near;
-use workspaces::prelude::*; 
-use workspaces::{network::Sandbox, Account, Contract, Worker};
 use near_sdk::json_types::U128;
+use near_units::parse_near;
+use serde_json::json;
+use workspaces::prelude::*;
+use workspaces::{network::Sandbox, Account, Contract, Worker};
 
 const DEFI_WASM_FILEPATH: &str = "../../res/defi.wasm";
 const FT_WASM_FILEPATH: &str = "../../res/fungible_token.wasm";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // initiate environemnt 
+    // initiate environemnt
     let worker = workspaces::sandbox().await?;
 
-    // deploy contracts 
+    // deploy contracts
     let defi_wasm = std::fs::read(DEFI_WASM_FILEPATH)?;
     let defi_contract = worker.dev_deploy(&defi_wasm).await?;
     let ft_wasm = std::fs::read(FT_WASM_FILEPATH)?;
@@ -34,20 +34,24 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
 
     // Initialize contracts
-    ft_contract.call(&worker, "new_default_meta")
+    ft_contract
+        .call(&worker, "new_default_meta")
         .args_json(serde_json::json!({
             "owner_id": owner.id(),
             "total_supply": parse_near!("1,000,000,000 N").to_string(),
         }))?
         .transact()
         .await?;
-    defi_contract.call(&worker, "new")
+    defi_contract
+        .call(&worker, "new")
         .args_json(serde_json::json!({
             "fungible_token_account_id": ft_contract.id()
         }))?
         .transact()
         .await?;
-    defi_contract.as_account().call(&worker, ft_contract.id(), "storage_deposit")
+    defi_contract
+        .as_account()
+        .call(&worker, ft_contract.id(), "storage_deposit")
         .args_json(serde_json::json!({
             "account_id": defi_contract.id()
         }))?
@@ -55,10 +59,12 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    // begin tests  
+    // begin tests
     test_total_supply(&owner, &ft_contract, &worker).await?;
     test_simple_transfer(&owner, &alice, &ft_contract, &worker).await?;
     test_can_close_empty_balance_account(&bob, &ft_contract, &worker).await?;
+    test_close_account_non_empty_balance(&alice, &ft_contract, &worker).await?;
+    test_close_account_non_empty_balance2(&alice, &ft_contract, &worker).await?;
     Ok(())
 }
 
@@ -69,11 +75,11 @@ async fn test_total_supply(
 ) -> anyhow::Result<()> {
     let initial_balance = U128::from(parse_near!("1,000,000,000 N"));
     let res: U128 = owner
-                .call(&worker, contract.id(), "ft_total_supply")
-                .args_json(json!({}))?
-                .transact()
-                .await?
-                .json()?;
+        .call(&worker, contract.id(), "ft_total_supply")
+        .args_json(json!({}))?
+        .transact()
+        .await?
+        .json()?;
     assert_eq!(res, initial_balance);
     println!("      Passed ✅ test_total_supply");
     Ok(())
@@ -87,7 +93,7 @@ async fn test_simple_transfer(
 ) -> anyhow::Result<()> {
     let transfer_amount = U128::from(parse_near!("1,000 N"));
 
-    // register user 
+    // register user
     user.call(&worker, contract.id(), "storage_deposit")
         .args_json(serde_json::json!({
             "account_id": user.id()
@@ -96,8 +102,9 @@ async fn test_simple_transfer(
         .transact()
         .await?;
 
-    // transfer ft 
-    owner.call(&worker, contract.id(), "ft_transfer")
+    // transfer ft
+    owner
+        .call(&worker, contract.id(), "ft_transfer")
         .args_json(serde_json::json!({
             "receiver_id": user.id(),
             "amount": transfer_amount
@@ -106,15 +113,17 @@ async fn test_simple_transfer(
         .transact()
         .await?;
 
-    let root_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
+    let root_balance: U128 = owner
+        .call(&worker, contract.id(), "ft_balance_of")
         .args_json(serde_json::json!({
             "account_id": owner.id()
         }))?
         .transact()
         .await?
         .json()?;
-    
-    let alice_balance: U128 = owner.call(&worker, contract.id(), "ft_balance_of")
+
+    let alice_balance: U128 = owner
+        .call(&worker, contract.id(), "ft_balance_of")
         .args_json(serde_json::json!({
             "account_id": user.id()
         }))?
@@ -122,7 +131,7 @@ async fn test_simple_transfer(
         .await?
         .json()?;
 
-    assert_eq!(root_balance,  U128::from(parse_near!("999,999,000 N")));
+    assert_eq!(root_balance, U128::from(parse_near!("999,999,000 N")));
     assert_eq!(alice_balance, transfer_amount);
 
     println!("      Passed ✅ test_simple_transfer");
@@ -134,8 +143,7 @@ async fn test_can_close_empty_balance_account(
     contract: &Contract,
     worker: &Worker<Sandbox>,
 ) -> anyhow::Result<()> {
-
-    // register user 
+    // register user
     user.call(&worker, contract.id(), "storage_deposit")
         .args_json(serde_json::json!({
             "account_id": user.id()
@@ -144,7 +152,8 @@ async fn test_can_close_empty_balance_account(
         .transact()
         .await?;
 
-    let result: bool = user.call(&worker, contract.id(), "storage_unregister")
+    let result: bool = user
+        .call(&worker, contract.id(), "storage_unregister")
         .args_json(serde_json::json!({}))?
         .deposit(1)
         .transact()
@@ -153,5 +162,31 @@ async fn test_can_close_empty_balance_account(
 
     assert_eq!(result, true);
     println!("      Passed ✅ can_close_empty_balance_account");
+    Ok(())
+}
+
+async fn test_close_account_non_empty_balance(
+    user_with_funds: &Account,
+    contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    match user_with_funds
+        .call(&worker, contract.id(), "storage_unregister")
+        .args_json(serde_json::json!({}))?
+        .deposit(1)
+        .transact()
+        .await
+    {
+        Ok(_result) => {
+            panic!("storage_unregister worked despite account being funded")
+        }
+        Err(e) => {
+            let e_string = e.to_string();
+            if !e_string.contains("Can't unregister the account with the positive balance without force") {
+                panic!("storage_unregister with balance displays unexpected error message")
+            } 
+            println!("      Passed ✅ close_account_non_empty_balance");
+        }
+    }
     Ok(())
 }
