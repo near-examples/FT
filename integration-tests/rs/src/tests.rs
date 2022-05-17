@@ -2,6 +2,7 @@ use near_sdk::json_types::U128;
 use near_units::parse_near;
 use serde_json::json;
 use workspaces::prelude::*;
+use workspaces::result::CallExecutionDetails;
 use workspaces::{network::Sandbox, Account, Contract, Worker};
 
 const DEFI_WASM_FILEPATH: &str = "../../res/defi.wasm";
@@ -64,7 +65,7 @@ async fn main() -> anyhow::Result<()> {
     test_simple_transfer(&owner, &alice, &ft_contract, &worker).await?;
     test_can_close_empty_balance_account(&bob, &ft_contract, &worker).await?;
     test_close_account_non_empty_balance(&alice, &ft_contract, &worker).await?;
-    test_close_account_non_empty_balance2(&alice, &ft_contract, &worker).await?;
+    test_close_account_force_non_empty_balance(&alice, &ft_contract, &worker).await?;
     Ok(())
 }
 
@@ -182,11 +183,38 @@ async fn test_close_account_non_empty_balance(
         }
         Err(e) => {
             let e_string = e.to_string();
-            if !e_string.contains("Can't unregister the account with the positive balance without force") {
+            if !e_string
+                .contains("Can't unregister the account with the positive balance without force")
+            {
                 panic!("storage_unregister with balance displays unexpected error message")
-            } 
+            }
             println!("      Passed ✅ close_account_non_empty_balance");
         }
     }
+    Ok(())
+}
+
+async fn test_close_account_force_non_empty_balance(
+    user_with_funds: &Account,
+    contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let result: CallExecutionDetails = user_with_funds
+        .call(&worker, contract.id(), "storage_unregister")
+        .args_json(serde_json::json!({"force": true }))?
+        .deposit(1)
+        .transact()
+        .await?;
+
+    assert_eq!(true, result.is_success());
+    assert_eq!(
+        result.logs()[0],
+        format!(
+            "Closed @{} with {}",
+            user_with_funds.id(),
+            parse_near!("1,000 N") // alice balance from above transfer_amount
+        )
+    );
+    println!("      Passed ✅ close_account_force_non_empty_balance");
     Ok(())
 }
