@@ -1,5 +1,5 @@
 use near_sdk::json_types::U128;
-use near_units::parse_near;
+use near_units::{parse_gas, parse_near};
 use serde_json::json;
 use workspaces::prelude::*;
 use workspaces::result::CallExecutionDetails;
@@ -29,6 +29,12 @@ async fn main() -> anyhow::Result<()> {
         .into_result()?;
     let bob = owner
         .create_subaccount(&worker, "bob")
+        .initial_balance(parse_near!("30 N"))
+        .transact()
+        .await?
+        .into_result()?;
+    let charlie = owner
+        .create_subaccount(&worker, "charlie")
         .initial_balance(parse_near!("30 N"))
         .transact()
         .await?
@@ -66,6 +72,8 @@ async fn main() -> anyhow::Result<()> {
     test_can_close_empty_balance_account(&bob, &ft_contract, &worker).await?;
     test_close_account_non_empty_balance(&alice, &ft_contract, &worker).await?;
     test_close_account_force_non_empty_balance(&alice, &ft_contract, &worker).await?;
+    test_transfer_call_with_burned_amount(&owner, &charlie, &ft_contract, &defi_contract, &worker)
+        .await?;
     Ok(())
 }
 
@@ -162,7 +170,7 @@ async fn test_can_close_empty_balance_account(
         .json()?;
 
     assert_eq!(result, true);
-    println!("      Passed ✅ can_close_empty_balance_account");
+    println!("      Passed ✅ test_can_close_empty_balance_account");
     Ok(())
 }
 
@@ -188,7 +196,7 @@ async fn test_close_account_non_empty_balance(
             {
                 panic!("storage_unregister with balance displays unexpected error message")
             }
-            println!("      Passed ✅ close_account_non_empty_balance");
+            println!("      Passed ✅ test_close_account_non_empty_balance");
         }
     }
     Ok(())
@@ -215,6 +223,85 @@ async fn test_close_account_force_non_empty_balance(
             parse_near!("1,000 N") // alice balance from above transfer_amount
         )
     );
-    println!("      Passed ✅ close_account_force_non_empty_balance");
+    println!("      Passed ✅ test_close_account_force_non_empty_balance");
+    Ok(())
+}
+
+async fn test_transfer_call_with_burned_amount(
+    owner: &Account,
+    user: &Account,
+    ft_contract: &Contract,
+    defi_contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let transfer_amount_str = parse_near!("1,000,000 N").to_string();
+    let ftc_amount_str = parse_near!("1,000 N").to_string();
+
+    // register user
+    owner
+        .call(&worker, ft_contract.id(), "storage_deposit")
+        .args_json(serde_json::json!({
+            "account_id": user.id()
+        }))?
+        .deposit(parse_near!("0.008 N"))
+        .transact()
+        .await?;
+
+    // transfer ft
+    owner
+        .call(&worker, ft_contract.id(), "ft_transfer")
+        .args_json(serde_json::json!({
+            "receiver_id": user.id(),
+            "amount": transfer_amount_str
+        }))?
+        .deposit(1)
+        .transact()
+        .await?;
+
+    user.call(&worker, ft_contract.id(), "ft_transfer_call")
+        .args_json(serde_json::json!({
+            "receiver_id": defi_contract.id(),
+            "amount": ftc_amount_str,
+            "msg": "0",
+        }))?
+        .deposit(1)
+        .gas(parse_gas!("200 Tgas") as u64)
+        .transact()
+        .await?;
+
+    let storage_result: CallExecutionDetails = user
+        .call(&worker, ft_contract.id(), "storage_unregister")
+        .args_json(serde_json::json!({"force": true }))?
+        .deposit(1)
+        .transact()
+        .await?;
+
+    // assert new state
+    assert_eq!(
+        storage_result.logs()[0],
+        format!(
+            "Closed @{} with {}",
+            user.id(),
+            parse_near!("999,000 N") // balance after defi ft transfer
+        )
+    );
+
+    let total_supply: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({}))?
+        .transact()
+        .await?
+        .json()?;
+    assert_eq!(total_supply, U128::from(parse_near!("999,000,000 N")));
+
+    let defi_balance: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({"account_id": defi_contract.id()}))?
+        .transact()
+        .await?
+        .json()?;
+    assert_eq!(defi_balance, U128::from(parse_near!("999,000,000 N")));
+
+    println!("      Passed ✅ test_transfer_call_with_burned_amount");
     Ok(())
 }
