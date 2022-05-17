@@ -74,6 +74,13 @@ async fn main() -> anyhow::Result<()> {
     test_close_account_force_non_empty_balance(&alice, &ft_contract, &worker).await?;
     test_transfer_call_with_burned_amount(&owner, &charlie, &ft_contract, &defi_contract, &worker)
         .await?;
+    test_simulate_transfer_call_with_immediate_return_and_no_refund(
+        &owner,
+        &ft_contract,
+        &defi_contract,
+        &worker,
+    )
+    .await?;
     Ok(())
 }
 
@@ -303,5 +310,57 @@ async fn test_transfer_call_with_burned_amount(
     assert_eq!(defi_balance, U128::from(parse_near!("999,000,000 N")));
 
     println!("      Passed ✅ test_transfer_call_with_burned_amount");
+    Ok(())
+}
+
+async fn test_simulate_transfer_call_with_immediate_return_and_no_refund(
+    owner: &Account,
+    ft_contract: &Contract,
+    defi_contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let amount = parse_near!("1,000 N");
+    let amount_str = amount.to_string();
+    let owner_start_balance: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({}))?
+        .transact()
+        .await?
+        .json()?;
+    let defi_start_balance: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({"account_id": defi_contract.id()}))?
+        .transact()
+        .await?
+        .json()?;
+
+    owner
+        .call(&worker, ft_contract.id(), "ft_transfer_call")
+        .args_json(serde_json::json!({
+            "receiver_id": defi_contract.id(),
+            "amount": amount_str,
+            "msg": "take-my-money",
+        }))?
+        .deposit(1)
+        .gas(parse_gas!("200 Tgas") as u64)
+        .transact()
+        .await?;
+
+    let owner_after_balance: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({}))?
+        .transact()
+        .await?
+        .json()?;
+    let defi_after_balance: U128 = owner
+        .call(&worker, ft_contract.id(), "ft_total_supply")
+        .args_json(json!({"account_id": defi_contract.id()}))?
+        .transact()
+        .await?
+        .json()?;
+
+    assert_eq!(owner_start_balance.0, owner_after_balance.0);
+    assert_eq!(defi_start_balance.0, defi_after_balance.0);
+    println!("      Passed ✅ test_simulate_transfer_call_with_immediate_return_and_no_refund");
     Ok(())
 }
