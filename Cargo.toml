@@ -30,3 +30,6 @@ members = [
 exclude = [
   "integration-tests"
 ]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
