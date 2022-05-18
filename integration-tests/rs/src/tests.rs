@@ -94,6 +94,8 @@ async fn main() -> anyhow::Result<()> {
         &worker,
     )
     .await?;
+    test_transfer_call_promise_panics_for_a_full_refund(&owner, &alice, &ft_contract, &worker)
+        .await?;
     Ok(())
 }
 
@@ -437,12 +439,69 @@ async fn test_transfer_call_when_called_contract_not_registered_with_ft(
     Ok(())
 }
 
-async fn test_transfer_call_with_promise_and_refund() -> anyhow::Result<()> {
-    println!("      Passed ✅ test_transfer_call_with_promise_and_refund");
-    Ok(())
-}
+async fn test_transfer_call_promise_panics_for_a_full_refund(
+    owner: &Account,
+    user: &Account,
+    ft_contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let amount = parse_near!("10 N");
 
-async fn test_transfer_call_promise_panics_for_a_full_refund() -> anyhow::Result<()> {
-    println!("      Passed ✅ test_transfer_call_promise_panics_for_a_full_refund");
+    // register user
+    owner
+        .call(&worker, ft_contract.id(), "storage_deposit")
+        .args_json(serde_json::json!({
+            "account_id": user.id()
+        }))?
+        .deposit(parse_near!("0.008 N"))
+        .transact()
+        .await?;
+
+    let owner_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id":  owner.id()}))?
+        .transact()
+        .await?
+        .json()?;
+    let user_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id": user.id()}))?
+        .transact()
+        .await?
+        .json()?;
+
+    match owner
+        .call(&worker, ft_contract.id(), "ft_transfer_call")
+        .args_json(serde_json::json!({
+            "receiver_id": user.id(),
+            "amount": amount,
+            "msg": "no parsey as integer big panic oh no",
+        }))?
+        .deposit(1)
+        .gas(parse_gas!("200 Tgas") as u64)
+        .transact()
+        .await
+    {
+        Ok(res) => {
+            panic!("Did not expect for trx to accept invalid paramenter data types")
+        }
+        Err(err) => {
+            let owner_after_balance: U128 = ft_contract
+                .call(&worker, "ft_balance_of")
+                .args_json(json!({"account_id":  owner.id()}))?
+                .transact()
+                .await?
+                .json()?;
+            let user_after_balance: U128 = ft_contract
+                .call(&worker, "ft_balance_of")
+                .args_json(json!({"account_id": user.id()}))?
+                .transact()
+                .await?
+                .json()?;
+            assert_eq!(owner_before_balance, owner_after_balance);
+            assert_eq!(user_before_balance, user_after_balance);
+            println!("      Passed ✅ test_transfer_call_promise_panics_for_a_full_refund");
+        }
+    }
     Ok(())
 }
