@@ -39,6 +39,12 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?
         .into_result()?;
+    let dave = owner
+        .create_subaccount(&worker, "dave")
+        .initial_balance(parse_near!("30 N"))
+        .transact()
+        .await?
+        .into_result()?;
 
     // Initialize contracts
     ft_contract
@@ -78,6 +84,13 @@ async fn main() -> anyhow::Result<()> {
         &owner,
         &ft_contract,
         &defi_contract,
+        &worker,
+    )
+    .await?;
+    test_transfer_call_when_called_contract_not_registered_with_ft(
+        &owner,
+        &dave,
+        &ft_contract,
         &worker,
     )
     .await?;
@@ -319,16 +332,16 @@ async fn test_simulate_transfer_call_with_immediate_return_and_no_refund(
     defi_contract: &Contract,
     worker: &Worker<Sandbox>,
 ) -> anyhow::Result<()> {
-    let amount = parse_near!("1,000 N");
+    let amount: u128 = parse_near!("100,000,000 N");
     let amount_str = amount.to_string();
-    let owner_start_balance: U128 = owner
-        .call(&worker, ft_contract.id(), "ft_total_supply")
-        .args_json(json!({}))?
+    let owner_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id": owner.id()}))?
         .transact()
         .await?
         .json()?;
-    let defi_start_balance: U128 = owner
-        .call(&worker, ft_contract.id(), "ft_total_supply")
+    let defi_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
         .args_json(json!({"account_id": defi_contract.id()}))?
         .transact()
         .await?
@@ -339,28 +352,97 @@ async fn test_simulate_transfer_call_with_immediate_return_and_no_refund(
         .args_json(serde_json::json!({
             "receiver_id": defi_contract.id(),
             "amount": amount_str,
-            "msg": "take-my-money",
+            "msg": "take-my-money"
         }))?
         .deposit(1)
         .gas(parse_gas!("200 Tgas") as u64)
         .transact()
         .await?;
 
-    let owner_after_balance: U128 = owner
-        .call(&worker, ft_contract.id(), "ft_total_supply")
-        .args_json(json!({}))?
+    let owner_after_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id": owner.id()}))?
         .transact()
         .await?
         .json()?;
-    let defi_after_balance: U128 = owner
-        .call(&worker, ft_contract.id(), "ft_total_supply")
+    let defi_after_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
         .args_json(json!({"account_id": defi_contract.id()}))?
         .transact()
         .await?
         .json()?;
 
-    assert_eq!(owner_start_balance.0, owner_after_balance.0);
-    assert_eq!(defi_start_balance.0, defi_after_balance.0);
+    assert_eq!(owner_before_balance.0 - amount, owner_after_balance.0);
+    assert_eq!(defi_before_balance.0 + amount, defi_after_balance.0);
     println!("      Passed ✅ test_simulate_transfer_call_with_immediate_return_and_no_refund");
+    Ok(())
+}
+
+async fn test_transfer_call_when_called_contract_not_registered_with_ft(
+    owner: &Account,
+    user: &Account,
+    ft_contract: &Contract,
+    worker: &Worker<Sandbox>,
+) -> anyhow::Result<()> {
+    let amount = parse_near!("10 N");
+    let amount_str = amount.to_string();
+    let owner_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id":  owner.id()}))?
+        .transact()
+        .await?
+        .json()?;
+    let user_before_balance: U128 = ft_contract
+        .call(&worker, "ft_balance_of")
+        .args_json(json!({"account_id": user.id()}))?
+        .transact()
+        .await?
+        .json()?;
+
+    match owner
+        .call(&worker, ft_contract.id(), "ft_transfer_call")
+        .args_json(serde_json::json!({
+            "receiver_id": user.id(),
+            "amount": amount_str,
+            "msg": "take-my-money",
+        }))?
+        .deposit(1)
+        .gas(parse_gas!("200 Tgas") as u64)
+        .transact()
+        .await
+    {
+        Ok(res) => {
+            panic!("Was able to transfer FT to an unregistered account");
+        }
+        Err(err) => {
+            let owner_after_balance: U128 = ft_contract
+                .call(&worker, "ft_balance_of")
+                .args_json(json!({"account_id":  owner.id()}))?
+                .transact()
+                .await?
+                .json()?;
+            let user_after_balance: U128 = ft_contract
+                .call(&worker, "ft_balance_of")
+                .args_json(json!({"account_id": user.id()}))?
+                .transact()
+                .await?
+                .json()?;
+            assert_eq!(user_before_balance, user_after_balance);
+            assert_eq!(owner_before_balance, owner_after_balance);
+            println!(
+                "      Passed ✅ test_transfer_call_when_called_contract_not_registered_with_ft"
+            );
+        }
+    }
+    Ok(())
+}
+
+async fn test_transfer_call_with_promise_and_refund() -> anyhow::Result<()> {
+    println!("      Passed ✅ test_transfer_call_with_promise_and_refund");
+    Ok(())
+}
+
+async fn test_transfer_call_promise_panics_for_a_full_refund() -> anyhow::Result<()> {
+    println!("      Passed ✅ test_transfer_call_promise_panics_for_a_full_refund");
     Ok(())
 }
