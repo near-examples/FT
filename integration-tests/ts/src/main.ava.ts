@@ -17,23 +17,7 @@ import { Worker, NearAccount, captureError, NEAR, BN } from 'near-workspaces';
 import anyTest, { TestFn } from 'ava';
 
 const STORAGE_BYTE_COST = '1.5 mN';
-
-async function init_ft(
-    ft: NearAccount,
-    owner: NearAccount,
-    supply: BN | string = '10000',
-) {
-    await ft.call(ft, 'new_default_meta', {
-        owner_id: owner,
-        total_supply: supply,
-    });
-}
-
-async function init_defi(defi: NearAccount, ft: NearAccount) {
-    await defi.call(defi, 'new', {
-        fungible_token_account_id: ft,
-    });
-}
+const INITIAL_SUPPLY = "10000";
 
 async function registerUser(ft: NearAccount, user: NearAccount) {
     await user.call(
@@ -62,11 +46,19 @@ test.beforeEach(async t => {
         "../../res/fungible_token.wasm",
         { initialBalance: NEAR.parse('3 N').toJSON() },
     );
+    await ft.call(ft, 'new_default_meta', {
+        owner_id: root,
+        total_supply: INITIAL_SUPPLY,
+    });
     const defi = await root.createAndDeploy(
         root.getSubAccount('defi').accountId,
         '../../res/defi.wasm',
         { initialBalance: NEAR.parse('3 N').toJSON() },
     );
+    await defi.call(defi, 'new', {
+        fungible_token_account_id: ft,
+    });
+
     const ali = await root.createSubAccount('ali', { initialBalance: NEAR.parse('1 N').toJSON() });
 
     t.context.worker = worker;
@@ -80,18 +72,15 @@ test.afterEach(async t => {
 });
 
 test('Total supply', async t => {
-    const { ft, ali } = t.context.accounts;
-    await init_ft(ft, ali, '1000');
-
+    const { ft } = t.context.accounts;
     const totalSupply: string = await ft.view('ft_total_supply');
-    t.is(totalSupply, '1000');
+    t.is(totalSupply, INITIAL_SUPPLY);
 });
 
 test('Simple transfer', async t => {
     const { ft, ali, root } = t.context.accounts;
-    const initialAmount = new BN('10000');
+    const initialAmount = new BN(INITIAL_SUPPLY);
     const transferAmount = new BN('100');
-    await init_ft(ft, root, initialAmount);
 
     // Register by prepaying for storage.
     await registerUser(ft, ali);
@@ -114,8 +103,7 @@ test('Simple transfer', async t => {
 });
 
 test('Can close empty balance account', async t => {
-    const { ft, ali, root } = t.context.accounts;
-    await init_ft(ft, root);
+    const { ft, ali } = t.context.accounts;
 
     await registerUser(ft, ali);
 
@@ -132,8 +120,6 @@ test('Can close empty balance account', async t => {
 test('Can force close non-empty balance account', async t => {
     const { ft, root } = t.context.accounts;
 
-    await init_ft(ft, root, '100');
-
     const errorString = await captureError(async () =>
         root.call(ft, 'storage_unregister', {}, { attachedDeposit: '1' }));
     t.regex(errorString, /Can't unregister the account with the positive balance without force/);
@@ -146,7 +132,7 @@ test('Can force close non-empty balance account', async t => {
     );
 
     t.is(result.logs[0],
-        `Closed @${root.accountId} with 100`,
+        `Closed @${root.accountId} with ${INITIAL_SUPPLY}`,
     );
 });
 
@@ -156,8 +142,6 @@ test('Transfer call with burned amount', async t => {
     const initialAmount = new BN(10_000);
     const transferAmount = new BN(100);
     const burnAmount = new BN(10);
-    await init_ft(ft, root, initialAmount);
-    await init_defi(defi, ft);
 
     await registerUser(ft, defi);
     const result = await root
@@ -206,8 +190,6 @@ test('Transfer call immediate return no refund', async t => {
     const { ft, defi, root } = t.context.accounts;
     const initialAmount = new BN(10_000);
     const transferAmount = new BN(100);
-    await init_ft(ft, root, initialAmount);
-    await init_defi(defi, ft);
 
     await registerUser(ft, defi);
 
@@ -234,8 +216,6 @@ test('Transfer call promise panics for a full refund', async t => {
     const { ft, defi, root } = t.context.accounts;
     const initialAmount = new BN(10_000);
     const transferAmount = new BN(100);
-    await init_ft(ft, root, initialAmount);
-    await init_defi(defi, ft);
 
     await registerUser(ft, defi);
 
