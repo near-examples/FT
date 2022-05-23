@@ -23,5 +23,7 @@ jobs:
           target: wasm32-unknown-unknown
       - name: Run unit tests
         run: cd scripts && ./unit_tests.sh
-      - name: Run integration tests
-        run: cd scripts && ./integration_tests.sh
+      - name: Run Rust integration tests
+        run: cd integration-tests/rs && cargo run --example integration-tests
+      - name: Run TS integration tests 
+        run: cd integration-tests/ts && yarn && yarn test
