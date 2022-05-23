@@ -22,7 +22,7 @@ jobs:
           toolchain: stable-2020-10-08
           target: wasm32-unknown-unknown
       - name: Run unit tests
-        run: cd scripts && ./unit_tests.sh
+        run: cd ft && cargo test -- --nocapture --color=always
       - name: Run Rust integration tests
         run: cd integration-tests/rs && cargo run --example integration-tests
       - name: Run TS integration tests 
