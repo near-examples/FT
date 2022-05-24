@@ -19,7 +19,7 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-./build.sh
+cd scripts && ./build.sh
 ```
 
 Using this contract
@@ -125,14 +125,21 @@ As with many Rust libraries and contracts, there are tests in the main fungible 
 
 Additionally, this project has [simulation] tests in `tests/sim`. Simulation tests allow testing cross-contract calls, which is crucial to ensuring that the `ft_transfer_call` function works properly. These simulation tests are the reason this project has the file structure it does. Note that the root project has a `Cargo.toml` which sets it up as a workspace. `ft` and `test-contract-defi` are both small & focused contract projects, the latter only existing for simulation tests. The root project imports `near-sdk-sim` and tests interaction between these contracts.
 
-You can run all these tests with one command:
+You can run unit tests with the following command:
 
 ```bash
-cargo test
+cd ft && cargo test -- --nocapture --color=always
 ```
 
-If you want to run only simulation tests, you can use `cargo test simulate`, since all the simulation tests include "simulate" in their names.
-
+You can run integration tests with the following commands:
+*Rust*
+```bash
+cd integration-tests/rs && cargo run --example integration-tests
+```
+*TypeScript*
+```bash
+cd integration-tests/ts && yarn && yarn test
+```
 
 ## Notes
 

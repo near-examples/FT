@@ -3,10 +3,9 @@ Some hypothetical DeFi contract that will do smart things with the transferred t
 */
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::json_types::{U128};
+use near_sdk::json_types::U128;
 use near_sdk::{
-    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault,
-    PromiseOrValue,
+    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, PromiseOrValue,
 };
 
 const BASE_GAS: u64 = 5_000_000_000_000;
