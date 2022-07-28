@@ -41,25 +41,27 @@ const test = anyTest as TestFn<{
 test.beforeEach(async t => {
     const worker = await Worker.init();
     const root = worker.rootAccount;
-    const ft = await root.createAndDeploy(
-        root.getSubAccount('fungible-token').accountId,
+    const ft = await root.devDeploy(
         "../../res/fungible_token.wasm",
-        { initialBalance: NEAR.parse('3 N').toJSON() },
+        {
+            initialBalance: NEAR.parse('100 N').toJSON(),
+            method: "new_default_meta",
+            args: {
+                owner_id: root,
+                total_supply: INITIAL_SUPPLY,
+            }
+        },
     );
-    await ft.call(ft, 'new_default_meta', {
-        owner_id: root,
-        total_supply: INITIAL_SUPPLY,
-    });
-    const defi = await root.createAndDeploy(
-        root.getSubAccount('defi').accountId,
+    const defi = await root.devDeploy(
         '../../res/defi.wasm',
-        { initialBalance: NEAR.parse('3 N').toJSON() },
+        {
+            initialBalance: NEAR.parse('100 N').toJSON(),
+            method: "new",
+            args: { fungible_token_account_id: ft }
+        },
     );
-    await defi.call(defi, 'new', {
-        fungible_token_account_id: ft,
-    });
 
-    const ali = await root.createSubAccount('ali', { initialBalance: NEAR.parse('1 N').toJSON() });
+    const ali = await root.createSubAccount('ali', { initialBalance: NEAR.parse('100 N').toJSON() });
 
     t.context.worker = worker;
     t.context.accounts = { root, ft, defi, ali };
