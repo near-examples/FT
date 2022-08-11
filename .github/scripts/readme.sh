@@ -1,8 +1,6 @@
 #!/bin/bash
 echo ==== Quicket deploy ====
 TEXT=$(printf 'y\n' | near dev-deploy --wasmFile res/fungible_token.wasm --helperUrl https://near-contract-helper.onrender.com)
-echo $PWD
-echo $TEXT
 if [[ ! "$TEXT" =~ .*"Done deploying to".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
@@ -31,6 +29,7 @@ fi
 
 echo ==== View contract metadata ====
 TEXT=$(near view $CONTRACT_NAME ft_metadata)
+echo $TEXT
 if [[ ! "$TEXT" =~ .*"Example NEAR fungible token".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
