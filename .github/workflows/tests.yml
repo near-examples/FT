@@ -7,7 +7,7 @@ jobs:
   tests:
     strategy:
       matrix:
-        platform: [ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]  # mac-os in development
     runs-on: ${{ matrix.platform }}
     env:
       RUST_BACKTRACE: 1

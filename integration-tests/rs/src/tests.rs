@@ -20,7 +20,7 @@ async fn main() -> anyhow::Result<()> {
     let ft_contract = worker.dev_deploy(&ft_wasm).await?;
 
     // create accounts
-    let owner = worker.root_account();
+    let owner = worker.root_account().unwrap();
     let alice = owner
         .create_subaccount(&worker, "alice")
         .initial_balance(parse_near!("30 N"))
