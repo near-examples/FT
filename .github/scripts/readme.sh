@@ -1,6 +1,6 @@
 #!/bin/bash
 echo ==== Quicket deploy ====
-TEXT=$(near dev-deploy --wasmFile res/fungible_token.wasm --helperUrl https://near-contract-helper.onrender.com)
+TEXT=$(printf 'y\n' | near dev-deploy --wasmFile res/fungible_token.wasm --helperUrl https://near-contract-helper.onrender.com)
 echo $PWD
 echo $TEXT
 if [[ ! "$TEXT" =~ .*"Done deploying to".* ]]; then
