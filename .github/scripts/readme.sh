@@ -29,7 +29,6 @@ fi
 
 echo ==== View contract metadata ====
 TEXT=$(near view $CONTRACT_NAME ft_metadata)
-echo $TEXT
 if [[ ! "$TEXT" =~ .*"Example Token Name".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
@@ -58,7 +57,7 @@ fi
 echo ==== Check balance of sub-account ====
 TEXT=$(near view $CONTRACT_NAME ft_balance_of '{"account_id": "'bob.$CONTRACT_NAME'"}')
 echo $TEXT  # TODO: remove 
-if [[ ! "$TEXT" =~ .*"0".* ]]; then
+if [[ ! "$TEXT" =~ .*"'0'".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
 else
@@ -77,7 +76,7 @@ fi
 echo ==== Check balance of sub-account ====
 TEXT=$(near view $CONTRACT_NAME ft_balance_of '{"account_id": "'bob.$CONTRACT_NAME'"}')
 echo $TEXT  # TODO: remove 
-if [[ ! "$TEXT" =~ .*"19".* ]]; then
+if [[ ! "$TEXT" =~ .*"'19'".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
 else
