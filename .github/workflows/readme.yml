@@ -21,5 +21,7 @@ jobs:
           target: wasm32-unknown-unknown
       - name: Install NEAR CLI
         run: npm install near-cli -g
+      - name: Build
+        run: cd scripts && bash ./build.sh
       - name: Run Readme Commands
         run: bash .github/scripts/readme.sh

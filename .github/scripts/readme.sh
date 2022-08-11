@@ -1,13 +1,4 @@
 #!/bin/bash
-echo ==== Building ====
-TEXT=$(cd scripts && bash ./build.sh)
-if [[ ! "$TEXT" =~ .*"Finished release [optimized] target(s) in".* ]]; then
-    echo -e "\033[0;31m FAIL \033[0m"
-    exit 1
-else
-    echo -e "\033[0;32m SUCCESS \033[0m"
-fi
-
 echo ==== Quicket deploy ====
 TEXT=$(near dev-deploy --wasmFile res/fungible_token.wasm --helperUrl https://near-contract-helper.onrender.com)
 if [[ ! "$TEXT" =~ .*"Done deploying to".* ]]; then
@@ -16,7 +7,6 @@ if [[ ! "$TEXT" =~ .*"Done deploying to".* ]]; then
 else
     echo -e "\033[0;32m SUCCESS \033[0m"
 fi
-
 
 echo ==== Set dev account env variable ====
 source neardev/dev-account.env
