@@ -30,7 +30,7 @@ fi
 echo ==== View contract metadata ====
 TEXT=$(near view $CONTRACT_NAME ft_metadata)
 echo $TEXT
-if [[ ! "$TEXT" =~ .*"name: 'Example Token Name', symbol: 'EXLT'".* ]]; then
+if [[ ! "$TEXT" =~ .*"Example Token Name".* ]]; then
     echo -e "\033[0;31m FAIL \033[0m"
     exit 1
 else
