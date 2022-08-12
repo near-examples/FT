@@ -19,7 +19,7 @@ If you're using Gitpod, you can skip this step.
 
 To build run:
 ```bash
-cd scripts && ./build.sh
+./scripts/build.sh
 ```
 
 Using this contract
