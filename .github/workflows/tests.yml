@@ -3,6 +3,8 @@ on:
   repository_dispatch:
     types: [tests-report]
   push:
+  pull_request_target:
+    types: [opened, edited]
 jobs:
   tests:
     strategy:
