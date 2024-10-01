@@ -85,7 +85,7 @@ You can tell if the environment variable is set correctly if your command line p
 
 Now we can deploy the compiled contract in this example to your account:
 
-    near deploy --wasmFile res/fungible_token.wasm --accountId $ID
+    near deploy $ID res/fungible_token.wasm 
 
 FT contract should be initialized before usage. You can read more about metadata at ['nomicon.io'](https://nomicon.io/Standards/FungibleToken/Metadata.html#reference-level-explanation). Modify the parameters and create a token:
 
