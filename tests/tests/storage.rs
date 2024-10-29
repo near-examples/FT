@@ -250,7 +250,7 @@ async fn close_account_non_empty_balance() -> anyhow::Result<()> {
         .max_gas()
         .deposit(ONE_YOCTO)
         .transact()
-        .await;
+        .await?;
     assert!(format!("{:?}", res)
         .contains("Can't unregister the account with the positive balance without force"));
 
@@ -260,7 +260,7 @@ async fn close_account_non_empty_balance() -> anyhow::Result<()> {
         .max_gas()
         .deposit(ONE_YOCTO)
         .transact()
-        .await;
+        .await?;
     assert!(format!("{:?}", res)
         .contains("Can't unregister the account with the positive balance without force"));
 
