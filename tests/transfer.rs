@@ -1,7 +1,9 @@
+pub mod common;
+
 use near_sdk::{json_types::U128, NearToken};
 use near_workspaces::{operations::Function, result::ValueOrReceiptId};
 
-use crate::init::{init_accounts, init_contracts, register_user, ONE_YOCTO};
+use common::{init_accounts, init_contracts, register_user, ONE_YOCTO};
 
 #[tokio::test]
 async fn simple_transfer() -> anyhow::Result<()> {

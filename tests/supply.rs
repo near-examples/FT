@@ -1,6 +1,8 @@
+pub mod common;
+
 use near_sdk::{json_types::U128, NearToken};
 
-use crate::init::{init_accounts, init_contracts};
+use common::{init_accounts, init_contracts};
 
 #[tokio::test]
 async fn test_total_supply() -> anyhow::Result<()> {

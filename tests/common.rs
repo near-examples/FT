@@ -1,8 +1,39 @@
+use std::sync::LazyLock;
+
+use cargo_near_build::BuildOpts;
 use near_sdk::{json_types::U128, AccountId, NearToken};
 use near_workspaces::{Account, Contract, DevNetwork, Worker};
 
 const INITIAL_BALANCE: NearToken = NearToken::from_near(30);
 pub const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
+
+static FUNGIBLE_TOKEN_CONTRACT_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let artifact = cargo_near_build::build(BuildOpts {
+        no_abi: true,
+        no_embed_abi: true,
+        ..Default::default()
+    })
+    .expect("Could not compile Fungible Token contract for tests");
+
+    let contract_wasm = std::fs::read(&artifact.path).expect(
+        format!(
+            "Could not read Fungible Token WASM file from {}",
+            artifact.path
+        )
+        .as_str(),
+    );
+
+    contract_wasm
+});
+
+static DEFI_CONTRACT_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let artifact_path = "tests/contracts/defi/res/defi.wasm";
+
+    let contract_wasm = std::fs::read(artifact_path)
+        .expect(format!("Could not read DeFi WASM file from {}", artifact_path).as_str());
+
+    contract_wasm
+});
 
 pub async fn init_accounts(root: &Account) -> anyhow::Result<(Account, Account, Account, Account)> {
     // create accounts
@@ -39,8 +70,7 @@ pub async fn init_contracts(
     initial_balance: U128,
     account: &Account,
 ) -> anyhow::Result<(Contract, Contract)> {
-    let ft_wasm = near_workspaces::compile_project(".").await?;
-    let ft_contract = worker.dev_deploy(&ft_wasm).await?;
+    let ft_contract = worker.dev_deploy(&FUNGIBLE_TOKEN_CONTRACT_WASM).await?;
 
     let res = ft_contract
         .call("new_default_meta")
@@ -50,8 +80,7 @@ pub async fn init_contracts(
         .await?;
     assert!(res.is_success());
 
-    let defi_wasm = near_workspaces::compile_project("./tests/contracts/defi").await?;
-    let defi_contract = worker.dev_deploy(&defi_wasm).await?;
+    let defi_contract = worker.dev_deploy(&DEFI_CONTRACT_WASM).await?;
 
     let res = defi_contract
         .call("new")
