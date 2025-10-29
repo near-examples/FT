@@ -1,13 +1,11 @@
-Fungible Token (FT) Example 👋 
+# Fungible Token (FT)
 
 [![](https://img.shields.io/badge/⋈%20Examples-Basics-green)](https://docs.near.org/tutorials/welcome)
 [![](https://img.shields.io/badge/Contract-Rust-red)](contract-rs)
 
-This repository contains an example implementation of a [fungible token] contract in Rust which uses [near-contract-standards] and workspaces-rs tests.
+This repository contains an example implementation of a [fungible token](https://docs.near.org/primitives/ft/standard) contract in Rust which uses [near-contract-standards] and [sandobox testing](https://docs.near.org/smart-contracts/testing/integration-test).
 
-[fungible token]: https://nomicon.io/Standards/FungibleToken/Core
 [near-contract-standards]: https://github.com/near/near-sdk-rs/tree/master/near-contract-standards
-[near-workspaces-rs]: https://github.com/near/near-workspaces-rs
 
 <br />
 
@@ -31,7 +29,7 @@ To deploy manually, install [`cargo-near`](https://github.com/near/cargo-near) a
 
 ```bash
 # Create a new account
-cargo near create-dev-account
+cargo near create-account <contract-account-id> --useFaucet
 
 # Deploy the contract on it
 cargo near deploy <contract-account-id>
@@ -63,11 +61,11 @@ near call <contract-account-id> ft_transfer '{"receiver_id": "<account-id>", "am
 
 ## Useful Links
 
+- [NEAR Documentation](https://docs.near.org)
+- [NEAR Telegram Developers Community Group](https://t.me/neardev)
+
+- [Smart Contracts Docs](https://docs.near.org/smart-contracts/anatomy)
 - [cargo-near](https://github.com/near/cargo-near) - NEAR smart contract development toolkit for Rust
 - [near CLI](https://near.cli.rs) - Iteract with NEAR blockchain from command line
-- [NEAR Rust SDK Documentation](https://docs.near.org/sdk/rust/introduction)
-- [NEAR Documentation](https://docs.near.org)
 - [NEAR StackOverflow](https://stackoverflow.com/questions/tagged/nearprotocol)
-- [NEAR Discord](https://near.chat)
-- [NEAR Telegram Developers Community Group](https://t.me/neardev)
 - NEAR DevHub: [Telegram](https://t.me/neardevhub), [Twitter](https://twitter.com/neardevhub)
