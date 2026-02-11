@@ -1,197 +1,285 @@
 pub mod common;
 
-use near_sdk::{json_types::U128, NearToken};
-use near_workspaces::{operations::Function, result::ValueOrReceiptId};
+use near_api::{
+    types::{json::U128, transaction::result::ValueOrReceiptId},
+    NearToken,
+};
+use near_sdk::serde_json::json;
 
-use common::{init_accounts, init_contracts, register_user, ONE_YOCTO};
+use common::ONE_YOCTO;
 
 #[tokio::test]
-async fn simple_transfer() -> anyhow::Result<()> {
-    // Create balance variables
+async fn simple_transfer() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
-    let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register the ft contract account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
 
-    let res = ft_contract
-        .call("ft_transfer")
-        .args_json((alice.id(), transfer_amount, Option::<bool>::None))
-        .max_gas()
+    // Register the alice account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
+
+    let transfer_amount = NearToken::from_near(10);
+
+    // Transfer tokens to alice
+    ft_contract
+        .call_function(
+            "ft_transfer",
+            (
+                alice.account_id().clone(),
+                transfer_amount,
+                Option::<bool>::None,
+            ),
+        )
+        .transaction()
         .deposit(ONE_YOCTO)
-        .transact()
-        .await?;
-    assert!(res.is_success());
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
 
-    let ft_contract_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((ft_contract.id(),))
-        .view()
+    // Get ft_contract balance
+    let ft_contract_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (ft_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    let alice_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((alice.id(),))
-        .view()
+        .data;
+
+    // Get alice balance
+    let alice_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (alice.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    assert_eq!(initial_balance.0 - transfer_amount.0, ft_contract_balance.0);
-    assert_eq!(transfer_amount.0, alice_balance.0);
+        .data;
+
+    assert_eq!(
+        NearToken::from_yoctonear(initial_balance.0)
+            .saturating_sub(transfer_amount)
+            .as_yoctonear(),
+        ft_contract_balance.0
+    );
+    assert_eq!(transfer_amount.as_yoctonear(), alice_balance.0);
 
     Ok(())
 }
 
 #[tokio::test]
 async fn transfer_call_with_burned_amount() -> anyhow::Result<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, defi_contract, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
+
     let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, defi_contract) = init_contracts(&worker, initial_balance, &alice).await?;
-
     // defi contract must be registered as a FT account
-    register_user(&ft_contract, defi_contract.id()).await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        defi_contract.account_id(),
+    )
+    .await?;
 
     // root invests in defi by calling `ft_transfer_call`
-    let res = ft_contract
-        .batch()
-        .call(
-            Function::new("ft_transfer_call")
-                .args_json((
-                    defi_contract.id(),
-                    transfer_amount,
-                    Option::<String>::None,
-                    "10",
-                ))
-                .deposit(ONE_YOCTO)
-                .gas(near_sdk::Gas::from_tgas(150)),
+    ft_contract
+        .call_function(
+            "ft_transfer_call",
+            json!({
+                "receiver_id": defi_contract.account_id(),
+                "amount": transfer_amount,
+                "memo": Option::<String>::None,
+                "msg": "10",
+            }),
         )
-        .call(
-            Function::new("storage_unregister")
-                .args_json((Some(true),))
-                .deposit(ONE_YOCTO)
-                .gas(near_sdk::Gas::from_tgas(150)),
-        )
-        .transact()
-        .await?;
-    assert!(res.is_success());
-
-    let logs = res.logs();
-    let expected = format!("Account @{} burned {}", ft_contract.id(), 10);
-    assert!(logs.len() >= 2);
-    assert!(logs.contains(&"The account of the sender was deleted"));
-    assert!(logs.contains(&(expected.as_str())));
-
-    match res.receipt_outcomes()[5].clone().into_result()? {
-        ValueOrReceiptId::Value(val) => {
-            let used_amount = val.json::<U128>()?;
-            assert_eq!(used_amount, transfer_amount);
-        }
-        _ => panic!("Unexpected receipt id"),
-    }
-    assert!(res.json::<bool>()?);
-
-    let res = ft_contract.call("ft_total_supply").view().await?;
-    assert_eq!(res.json::<U128>()?.0, transfer_amount.0 - 10);
-    let defi_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((defi_contract.id(),))
-        .view()
+        .transaction()
+        .deposit(ONE_YOCTO)
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?
-        .json::<U128>()?;
+        .assert_success();
+
+    ft_contract
+        .call_function("storage_unregister", json!({"force": Some(true)}))
+        .transaction()
+        .deposit(ONE_YOCTO)
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
+
+    let supply: U128 = ft_contract
+        .call_function("ft_total_supply", ())
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(supply.0, transfer_amount.0 - 10);
+
+    let defi_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (defi_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
     assert_eq!(defi_balance.0, transfer_amount.0 - 10);
 
     Ok(())
 }
 
 #[tokio::test]
-async fn transfer_call_with_immediate_return_and_no_refund() -> anyhow::Result<()> {
+async fn transfer_call_with_immediate_return_and_no_refund() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
-    let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
+    let (ft_contract, defi_contract, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, defi_contract) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register accounts as users of the ft contract
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
+
+    let transfer_amount = NearToken::from_near(10);
 
     // defi contract must be registered as a FT account
-    register_user(&ft_contract, defi_contract.id()).await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        defi_contract.account_id(),
+    )
+    .await?;
 
     // root invests in defi by calling `ft_transfer_call`
-    let res = ft_contract
-        .call("ft_transfer_call")
-        .args_json((
-            defi_contract.id(),
-            transfer_amount,
-            Option::<String>::None,
-            "take-my-money",
-        ))
-        .max_gas()
+    ft_contract
+        .call_function(
+            "ft_transfer_call",
+            (
+                defi_contract.account_id().clone(),
+                transfer_amount,
+                Option::<String>::None,
+                "take-my-money",
+            ),
+        )
+        .transaction()
         .deposit(ONE_YOCTO)
-        .transact()
-        .await?;
-    assert!(res.is_success());
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
 
-    let root_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((ft_contract.id(),))
-        .view()
+    let root_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (ft_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    let defi_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((defi_contract.id(),))
-        .view()
+        .data;
+    let defi_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (defi_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    assert_eq!(initial_balance.0 - transfer_amount.0, root_balance.0);
-    assert_eq!(transfer_amount.0, defi_balance.0);
+        .data;
+    assert_eq!(
+        NearToken::from_yoctonear(initial_balance.0)
+            .saturating_sub(transfer_amount)
+            .as_yoctonear(),
+        root_balance.0
+    );
+    assert_eq!(transfer_amount.as_yoctonear(), defi_balance.0);
 
     Ok(())
 }
 
 #[tokio::test]
-async fn transfer_call_when_called_contract_not_registered_with_ft() -> anyhow::Result<()> {
+async fn transfer_call_when_called_contract_not_registered_with_ft() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (_, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
-    let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
+    let (ft_contract, defi_contract, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, defi_contract) = init_contracts(&worker, initial_balance, &alice).await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
+
+    let transfer_amount = NearToken::from_near(10);
 
     // call fails because DEFI contract is not registered as FT user
     let res = ft_contract
-        .call("ft_transfer_call")
-        .args_json((
-            defi_contract.id(),
-            transfer_amount,
-            Option::<String>::None,
-            "take-my-money",
-        ))
-        .max_gas()
+        .call_function(
+            "ft_transfer_call",
+            (
+                defi_contract.account_id().clone(),
+                transfer_amount,
+                Option::<String>::None,
+                "take-my-money",
+            ),
+        )
+        .transaction()
         .deposit(ONE_YOCTO)
-        .transact()
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?;
     assert!(res.is_failure());
 
     // balances remain unchanged
-    let root_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((ft_contract.id(),))
-        .view()
+    let root_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (ft_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    let defi_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((defi_contract.id(),))
-        .view()
+        .data;
+    let defi_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (defi_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
+        .data;
     assert_eq!(initial_balance.0, root_balance.0);
     assert_eq!(0, defi_balance.0);
 
@@ -199,78 +287,140 @@ async fn transfer_call_when_called_contract_not_registered_with_ft() -> anyhow::
 }
 
 #[tokio::test]
-async fn transfer_call_with_promise_and_refund() -> anyhow::Result<()> {
+async fn transfer_call_with_promise_and_refund() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
-    let refund_amount = U128::from(NearToken::from_near(50).as_yoctonear());
-    let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
+    let (ft_contract, defi_contract, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, defi_contract) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register accounts as users of the ft contract
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
 
     // defi contract must be registered as a FT account
-    register_user(&ft_contract, defi_contract.id()).await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        defi_contract.account_id(),
+    )
+    .await?;
 
-    let res = ft_contract
-        .call("ft_transfer_call")
-        .args_json((
-            defi_contract.id(),
-            transfer_amount,
-            Option::<String>::None,
-            refund_amount.0.to_string(),
-        ))
-        .max_gas()
+    let refund_amount = NearToken::from_near(5);
+    let transfer_amount = NearToken::from_near(10);
+
+    ft_contract
+        .call_function(
+            "ft_transfer_call",
+            (
+                defi_contract.account_id().clone(),
+                transfer_amount,
+                Option::<String>::None,
+                refund_amount.as_yoctonear().to_string(),
+            ),
+        )
+        .transaction()
         .deposit(ONE_YOCTO)
-        .transact()
-        .await?;
-    assert!(res.is_success());
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
 
-    let root_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((ft_contract.id(),))
-        .view()
+    let root_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (ft_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    let defi_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((defi_contract.id(),))
-        .view()
+        .data;
+    let defi_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (defi_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
+        .data;
     assert_eq!(
-        initial_balance.0 - transfer_amount.0 + refund_amount.0,
+        NearToken::from_yoctonear(initial_balance.0)
+            .saturating_sub(transfer_amount)
+            .saturating_add(refund_amount)
+            .as_yoctonear(),
         root_balance.0
     );
-    assert_eq!(transfer_amount.0 - refund_amount.0, defi_balance.0);
+    assert_eq!(
+        transfer_amount.saturating_sub(refund_amount).as_yoctonear(),
+        defi_balance.0
+    );
 
     Ok(())
 }
 
 #[tokio::test]
-async fn transfer_call_promise_panics_for_a_full_refund() -> anyhow::Result<()> {
+async fn transfer_call_promise_panics_for_a_full_refund() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
     let transfer_amount = U128::from(NearToken::from_near(100).as_yoctonear());
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, defi_contract) = init_contracts(&worker, initial_balance, &alice).await?;
+    let (ft_contract, defi_contract, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
+
+    // Register accounts as users of the ft contract
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
 
     // defi contract must be registered as a FT account
-    register_user(&ft_contract, defi_contract.id()).await?;
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        defi_contract.account_id(),
+    )
+    .await?;
 
     // root invests in defi by calling `ft_transfer_call`
     let res = ft_contract
-        .call("ft_transfer_call")
-        .args_json((
-            defi_contract.id(),
-            transfer_amount,
-            Option::<String>::None,
-            "no parsey as integer big panic oh no".to_string(),
-        ))
-        .max_gas()
+        .call_function(
+            "ft_transfer_call",
+            (
+                defi_contract.account_id().clone(),
+                transfer_amount,
+                Option::<String>::None,
+                "no parsey as integer big panic oh no".to_string(),
+            ),
+        )
+        .transaction()
         .deposit(ONE_YOCTO)
-        .transact()
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?;
     assert!(res.is_success());
 
@@ -284,19 +434,19 @@ async fn transfer_call_promise_panics_for_a_full_refund() -> anyhow::Result<()> 
     }
 
     // balances remain unchanged
-    let root_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((ft_contract.id(),))
-        .view()
+    let root_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (ft_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    let defi_balance = ft_contract
-        .call("ft_balance_of")
-        .args_json((defi_contract.id(),))
-        .view()
+        .data;
+    let defi_balance: U128 = ft_contract
+        .call_function("ft_balance_of", (defi_contract.account_id().clone(),))
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json::<U128>()?;
-    assert_eq!(initial_balance, root_balance);
+        .data;
+    assert_eq!(initial_balance.0, root_balance.0);
     assert_eq!(0, defi_balance.0);
 
     Ok(())
