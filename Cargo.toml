@@ -9,9 +9,9 @@ repository = "https://github.com/near-examples/FT"
 # in https://github.com/near/NEPs/blob/master/neps/nep-0330.md
 [package.metadata.near.reproducible_build]
 # docker image, descriptor of build environment
-image = "sourcescan/cargo-near:0.16.1-rust-1.86.0"
+image = "sourcescan/cargo-near:0.22.0-rust-1.97.1"
 # tag after colon above serves only descriptive purpose; image is identified by digest
-image_digest = "sha256:5dff91e3271ace8e679dec5c12b724108c43c2c441a52ba7c94d7ee9e20a87de"
+image_digest = "sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234"
 # list of environment variables names, whose values, if set, will be used as external build parameters
 # in a reproducible manner
 # supported by `sourcescan/cargo-near:0.10.1-rust-1.82.0` image or later images
@@ -32,12 +32,12 @@ container_build_command = [
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "5.12.0"
-near-contract-standards = "5.12.0"
+near-sdk = "5.29.1"
+near-contract-standards = "5.29.1"
 
 [dev-dependencies] 
-near-sdk = { version = "5.12.0", features = ["unit-testing"] }
-near-workspaces = { version = "0.19.0", features = ["unstable"] }
+near-sdk = { version = "5.29.1", features = ["unit-testing"] }
+near-workspaces = { version = "0.23.0", features = ["unstable", "interop_sdk"] }
 anyhow = "1.0"
 tokio = { version = "1.41.0", features = ["full"] }
-cargo-near-build = "0.3.2"
+cargo-near-build = "0.11.5"

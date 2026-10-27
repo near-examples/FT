@@ -11,28 +11,31 @@ const DATA_IMAGE_SVG_NEAR_ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://
 pub const ONE_YOCTO: NearToken = NearToken::from_yoctonear(1);
 
 static FUNGIBLE_TOKEN_CONTRACT_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let artifact = cargo_near_build::build(BuildOpts {
+    let artifact = cargo_near_build::build_with_cli(BuildOpts {
         no_abi: true,
         no_embed_abi: true,
+        no_locked: true,
         ..Default::default()
     })
     .expect("Could not compile Fungible Token contract for tests");
 
-    let contract_wasm = std::fs::read(&artifact.path).expect(
-        format!(
-            "Could not read Fungible Token WASM file from {}",
-            artifact.path
-        )
-        .as_str(),
-    );
+    let contract_wasm = std::fs::read(&artifact)
+        .expect(format!("Could not read Fungible Token WASM file from {}", artifact).as_str());
 
     contract_wasm
 });
 
 static DEFI_CONTRACT_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let artifact_path = "tests/contracts/defi/res/defi.wasm";
+    let artifact_path = cargo_near_build::build_with_cli(BuildOpts {
+        manifest_path: Some("tests/contracts/defi/Cargo.toml".into()),
+        no_abi: true,
+        no_embed_abi: true,
+        no_locked: true,
+        ..Default::default()
+    })
+    .expect("Could not compile defi fixture");
 
-    let contract_wasm = std::fs::read(artifact_path)
+    let contract_wasm = std::fs::read(&artifact_path)
         .expect(format!("Could not read DeFi WASM file from {}", artifact_path).as_str());
 
     contract_wasm
@@ -128,4 +131,22 @@ pub async fn register_user(contract: &Contract, account_id: &AccountId) -> anyho
     assert!(res.is_success());
 
     Ok(())
+}
+
+/// Wait for asynchronous gas/deposit refunds before measuring spendable balance.
+pub async fn refunded_balance(account: &Account, minimum: NearToken) -> anyhow::Result<NearToken> {
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let balance = account.view_account().await?.balance;
+        if balance >= minimum {
+            return Ok(balance);
+        }
+        anyhow::ensure!(
+            tokio::time::Instant::now() < deadline,
+            "Balance {} stayed below {} after refunds",
+            balance,
+            minimum
+        );
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
 }
