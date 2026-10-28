@@ -2,7 +2,8 @@ pub mod common;
 
 use near_api::{
     types::{json::U128, transaction::result::ValueOrReceiptId},
-    NearToken,
+    types::{transaction::actions::FunctionCallAction, Action, NearGas},
+    NearToken, Transaction,
 };
 use near_sdk::serde_json::json;
 
@@ -103,32 +104,53 @@ async fn transfer_call_with_burned_amount() -> anyhow::Result<()> {
     )
     .await?;
 
-    // root invests in defi by calling `ft_transfer_call`
-    ft_contract
-        .call_function(
-            "ft_transfer_call",
-            json!({
-                "receiver_id": defi_contract.account_id(),
-                "amount": transfer_amount,
-                "memo": Option::<String>::None,
-                "msg": "10",
-            }),
-        )
-        .transaction()
-        .deposit(ONE_YOCTO)
-        .with_signer(ft_contract.account_id().clone(), signer.clone())
-        .send_to(&sandbox_network)
-        .await?
-        .assert_success();
+    // Unregister in the same receipt as the transfer, before the receiver and
+    // refund callback execute. Sequential transactions would miss this case.
+    let res = Transaction::construct(
+        ft_contract.account_id().clone(),
+        ft_contract.account_id().clone(),
+    )
+    .add_action(Action::FunctionCall(Box::new(FunctionCallAction {
+        method_name: "ft_transfer_call".into(),
+        args: near_sdk::serde_json::to_vec(&json!({
+            "receiver_id": defi_contract.account_id(),
+            "amount": transfer_amount,
+            "memo": Option::<String>::None,
+            "msg": "10",
+        }))?,
+        gas: NearGas::from_tgas(150),
+        deposit: ONE_YOCTO,
+    })))
+    .add_action(Action::FunctionCall(Box::new(FunctionCallAction {
+        method_name: "storage_unregister".into(),
+        args: near_sdk::serde_json::to_vec(&json!({"force": true}))?,
+        gas: NearGas::from_tgas(150),
+        deposit: ONE_YOCTO,
+    })))
+    .with_signer(signer.clone())
+    .send_to(&sandbox_network)
+    .await?
+    .into_full()
+    .expect("Final execution must include receipt outcomes");
+    assert!(res.is_success());
+    assert!(res.receipt_failures().is_empty());
 
-    ft_contract
-        .call_function("storage_unregister", json!({"force": Some(true)}))
-        .transaction()
-        .deposit(ONE_YOCTO)
-        .with_signer(ft_contract.account_id().clone(), signer.clone())
-        .send_to(&sandbox_network)
-        .await?
-        .assert_success();
+    let logs = res.logs();
+    assert!(logs.contains(&"The account of the sender was deleted"));
+    let burned = format!("Account @{} burned {}", ft_contract.account_id(), 10);
+    assert!(logs.contains(&burned.as_str()));
+
+    // Locate the resolver's result by executor and value, not receipt order.
+    assert!(
+        res.receipt_outcomes().iter().any(|outcome| {
+            outcome.executor_id == *ft_contract.account_id()
+                && matches!(outcome.clone().into_result(),
+                Ok(ValueOrReceiptId::Value(value))
+                    if value.json::<U128>().is_ok_and(|used| used.0 == transfer_amount.0))
+        }),
+        "The resolver must report the entire transfer as used when its sender is gone"
+    );
+    assert!(res.into_result()?.json::<bool>()?);
 
     let supply: U128 = ft_contract
         .call_function("ft_total_supply", ())
@@ -421,7 +443,9 @@ async fn transfer_call_promise_panics_for_a_full_refund() -> testresult::TestRes
         .deposit(ONE_YOCTO)
         .with_signer(ft_contract.account_id().clone(), signer.clone())
         .send_to(&sandbox_network)
-        .await?;
+        .await?
+        .into_full()
+        .expect("Final execution must include receipt outcomes");
     assert!(res.is_success());
 
     let promise_failures = res.receipt_failures();
