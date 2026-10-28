@@ -1,42 +1,62 @@
 pub mod common;
 
-use near_sdk::{json_types::U128, NearToken};
-
-use common::{init_accounts, init_contracts, ONE_YOCTO};
+use near_api::{types::json::U128, NearToken};
+use near_sdk::serde_json::json;
 
 #[tokio::test]
-async fn storage_deposit_not_enough_deposit() -> anyhow::Result<()> {
+async fn storage_deposit_not_enough_deposit() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register the alice account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
 
-    let new_account = ft_contract
-        .as_account()
-        .create_subaccount("new-account")
-        .initial_balance(NearToken::from_near(10))
-        .transact()
+    let new_account = common::create_subaccount(&sandbox, "new-account.sandbox")
+        .await
+        .unwrap();
+
+    let new_account_balance_before_deposit = new_account
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .into_result()?;
-
-    let new_account_balance_before_deposit = new_account.view_account().await?.balance;
-    let contract_balance_before_deposit = ft_contract.view_account().await?.balance;
+        .total;
+    let contract_balance_before_deposit = ft_contract
+        .as_account()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
+        .await?
+        .total;
 
     let minimal_deposit = near_sdk::env::storage_byte_cost().saturating_mul(125);
-    let res = new_account
-        .call(ft_contract.id(), "storage_deposit")
-        .args(b"{}".to_vec())
-        .max_gas()
+
+    // New account deposits storage
+    ft_contract
+        .call_function("storage_deposit", json!({"account_id": new_account.account_id(), "registration_only": Option::<bool>::None}))
+        .transaction()
         .deposit(minimal_deposit.saturating_sub(NearToken::from_yoctonear(1)))
-        .transact()
-        .await?;
-    assert!(res.is_failure());
+        .with_signer(new_account.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_failure();
 
     let new_account_balance_diff = new_account_balance_before_deposit.saturating_sub(
         common::refunded_balance(
             &new_account,
+            &sandbox_network,
             new_account_balance_before_deposit.saturating_sub(NearToken::from_millinear(5)),
         )
         .await?,
@@ -46,49 +66,71 @@ async fn storage_deposit_not_enough_deposit() -> anyhow::Result<()> {
     assert!(new_account_balance_diff < NearToken::from_millinear(5));
 
     let contract_balance_diff = ft_contract
-        .view_account()
+        .as_account()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .balance
+        .total
         .saturating_sub(contract_balance_before_deposit);
-    // Any gas reward must stay within the transaction gas budget.
+    // Gas rewards depend on the protocol and may be zero.
     assert!(contract_balance_diff < NearToken::from_millinear(5));
 
     Ok(())
 }
 
 #[tokio::test]
-async fn storage_deposit_minimal_deposit() -> anyhow::Result<()> {
+async fn storage_deposit_minimal_deposit() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register the alice account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
 
-    let new_account = ft_contract
-        .as_account()
-        .create_subaccount("new-account")
-        .initial_balance(NearToken::from_near(10))
-        .transact()
+    let new_account = common::create_subaccount(&sandbox, "new-account.sandbox")
+        .await
+        .unwrap();
+
+    let new_account_balance_before_deposit = new_account
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .into_result()?;
-
-    let new_account_balance_before_deposit = new_account.view_account().await?.balance;
-    let contract_balance_before_deposit = ft_contract.view_account().await?.balance;
+        .total;
+    let contract_balance_before_deposit = ft_contract
+        .as_account()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
+        .await?
+        .total;
 
     let minimal_deposit = near_sdk::env::storage_byte_cost().saturating_mul(125);
-    new_account
-        .call(ft_contract.id(), "storage_deposit")
-        .args(b"{}".to_vec())
-        .max_gas()
+    ft_contract
+        .call_function("storage_deposit", json!({"account_id": new_account.account_id(), "registration_only": Option::<bool>::None}))
+        .transaction()
         .deposit(minimal_deposit)
-        .transact()
+        .with_signer(new_account.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?
-        .into_result()?;
+        .assert_success();
 
     let new_account_balance_diff = new_account_balance_before_deposit.saturating_sub(
         common::refunded_balance(
             &new_account,
+            &sandbox_network,
             new_account_balance_before_deposit
                 .saturating_sub(minimal_deposit)
                 .saturating_sub(NearToken::from_millinear(5)),
@@ -98,51 +140,49 @@ async fn storage_deposit_minimal_deposit() -> anyhow::Result<()> {
     // new_account is charged the transaction fee, so it should loose a bit more than minimal_deposit
     assert!(new_account_balance_diff > minimal_deposit);
     assert!(
-        new_account_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5)),
-        "balance difference: {} yocto, deposit: {} yocto; before: {}, after: {}",
-        new_account_balance_diff.as_yoctonear(),
-        minimal_deposit.as_yoctonear(),
-        new_account_balance_before_deposit.as_yoctonear(),
-        new_account.view_account().await?.balance.as_yoctonear()
+        new_account_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5))
     );
 
     let contract_balance_diff = ft_contract
-        .view_account()
+        .as_account()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .balance
+        .total
         .saturating_sub(contract_balance_before_deposit);
-    // Registration retains the minimum deposit; any gas reward is protocol-dependent.
+    // Registration retains the minimum deposit; gas rewards may be zero.
     assert!(contract_balance_diff >= minimal_deposit);
-    // Allow for the transaction gas budget rather than a fixed gas-price estimate.
+    // Any gas reward must stay within the transaction gas budget.
     assert!(contract_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5)));
 
     Ok(())
 }
 
 #[tokio::test]
-async fn storage_deposit_refunds_excessive_deposit() -> anyhow::Result<()> {
+async fn storage_deposit_refunds_excessive_deposit() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
-
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
     let minimal_deposit = near_sdk::env::storage_byte_cost().saturating_mul(125);
 
     // Check the storage balance bounds to make sure we have the right minimal deposit
-    //
-    #[derive(near_sdk::serde::Serialize, near_sdk::serde::Deserialize)]
+    #[derive(near_sdk::serde::Deserialize)]
     #[serde(crate = "near_sdk::serde")]
     struct StorageBalanceBounds {
         min: U128,
         max: U128,
     }
     let storage_balance_bounds: StorageBalanceBounds = ft_contract
-        .call("storage_balance_bounds")
-        .view()
+        .call_function("storage_balance_bounds", ())
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json()?;
+        .data;
     assert_eq!(
         storage_balance_bounds.min,
         minimal_deposit.as_yoctonear().into()
@@ -153,62 +193,70 @@ async fn storage_deposit_refunds_excessive_deposit() -> anyhow::Result<()> {
     );
 
     // Check that a non-registered account does not have storage balance
-    //
-    #[derive(near_sdk::serde::Serialize, near_sdk::serde::Deserialize)]
+    #[derive(near_sdk::serde::Deserialize)]
     #[serde(crate = "near_sdk::serde")]
     struct StorageBalanceOf {
         total: U128,
         available: U128,
     }
-    let storage_balance_bounds: Option<StorageBalanceOf> = ft_contract
-        .call("storage_balance_of")
-        .args_json(near_sdk::serde_json::json!({"account_id": "non-registered-account"}))
-        .view()
+    let storage_balance_of: Option<StorageBalanceOf> = ft_contract
+        .call_function(
+            "storage_balance_of",
+            near_sdk::serde_json::json!({"account_id": "non-registered-account.sandbox"}),
+        )
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json()?;
-    assert!(storage_balance_bounds.is_none());
+        .data;
+    assert!(storage_balance_of.is_none());
 
     // Create a new account and deposit some NEAR to cover the storage
-    //
-    let new_account = ft_contract
+    let new_account = common::create_subaccount(&sandbox, "new-account.sandbox")
+        .await
+        .unwrap();
+
+    let new_account_balance_before_deposit = new_account
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
+        .await?
+        .total;
+    let contract_balance_before_deposit = ft_contract
         .as_account()
-        .create_subaccount("new-account")
-        .initial_balance(NearToken::from_near(10))
-        .transact()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .into_result()?;
+        .total;
 
-    let new_account_balance_before_deposit = new_account.view_account().await?.balance;
-    let contract_balance_before_deposit = ft_contract.view_account().await?.balance;
-
-    new_account
-        .call(ft_contract.id(), "storage_deposit")
-        .args(b"{}".to_vec())
-        .max_gas()
+    ft_contract
+        .call_function("storage_deposit", json!({"account_id": new_account.account_id(), "registration_only": Option::<bool>::None}))
+        .transaction()
         .deposit(NearToken::from_near(5))
-        .transact()
+        .with_signer(new_account.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?
-        .into_result()?;
+        .assert_success();
 
     // The expected storage balance should be the minimal deposit,
     // the balance of the account should be reduced by the deposit,
     // and the contract should gain the deposit.
-    //
-    let storage_balance_bounds: StorageBalanceOf = ft_contract
-        .call("storage_balance_of")
-        .args_json(near_sdk::serde_json::json!({"account_id": new_account.id()}))
-        .view()
+    let storage_balance: StorageBalanceOf = ft_contract
+        .call_function(
+            "storage_balance_of",
+            near_sdk::serde_json::json!({"account_id": new_account.account_id()}),
+        )
+        .read_only()
+        .fetch_from(&sandbox_network)
         .await?
-        .json()?;
-    assert_eq!(
-        storage_balance_bounds.total,
-        minimal_deposit.as_yoctonear().into()
-    );
-    assert_eq!(storage_balance_bounds.available, 0.into());
+        .data;
+    assert_eq!(storage_balance.total, minimal_deposit.as_yoctonear().into());
+    assert_eq!(storage_balance.available, U128::from(0));
 
     let new_account_balance_diff = new_account_balance_before_deposit.saturating_sub(
         common::refunded_balance(
             &new_account,
+            &sandbox_network,
             new_account_balance_before_deposit
                 .saturating_sub(minimal_deposit)
                 .saturating_sub(NearToken::from_millinear(5)),
@@ -218,20 +266,18 @@ async fn storage_deposit_refunds_excessive_deposit() -> anyhow::Result<()> {
     // new_account is charged the transaction fee, so it should loose a bit more than minimal_deposit
     assert!(new_account_balance_diff > minimal_deposit);
     assert!(
-        new_account_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5)),
-        "balance difference: {} yocto, deposit: {} yocto; before: {}, after: {}",
-        new_account_balance_diff.as_yoctonear(),
-        minimal_deposit.as_yoctonear(),
-        new_account_balance_before_deposit.as_yoctonear(),
-        new_account.view_account().await?.balance.as_yoctonear()
+        new_account_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5))
     );
 
     let contract_balance_diff = ft_contract
-        .view_account()
+        .as_account()
+        .tokens()
+        .near_balance()
+        .fetch_from(&sandbox_network)
         .await?
-        .balance
+        .total
         .saturating_sub(contract_balance_before_deposit);
-    // Registration retains the minimum deposit; any gas reward is protocol-dependent.
+    // Registration retains the minimum deposit; gas rewards may be zero.
     assert!(contract_balance_diff >= minimal_deposit);
     assert!(contract_balance_diff < minimal_deposit.saturating_add(NearToken::from_millinear(5)));
 
@@ -239,78 +285,128 @@ async fn storage_deposit_refunds_excessive_deposit() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn close_account_empty_balance() -> anyhow::Result<()> {
+async fn close_account_empty_balance() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the accounts
+    let (alice, _, _, _) = common::init_accounts(&sandbox).await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register alice account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &alice.account_id(),
+    )
+    .await?;
 
-    let res = alice
-        .call(ft_contract.id(), "storage_unregister")
-        .args_json((Option::<bool>::None,))
-        .max_gas()
-        .deposit(ONE_YOCTO)
-        .transact()
-        .await?;
-    assert!(res.json::<bool>()?);
+    // Alice unregisters with empty balance
+    let unregistered = ft_contract
+        .call_function("storage_unregister", json!({"force": Option::<bool>::None}))
+        .transaction()
+        .deposit(common::ONE_YOCTO)
+        .with_signer(alice.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .into_result()?
+        .json::<bool>()?;
+    assert!(
+        unregistered,
+        "A registered empty account must be unregistered"
+    );
 
     Ok(())
 }
 
 #[tokio::test]
-async fn close_account_non_empty_balance() -> anyhow::Result<()> {
+async fn close_account_non_empty_balance() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register ft_contract account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
 
+    // ft_contract tries to unregister with non-empty balance without force
     let res = ft_contract
-        .call("storage_unregister")
-        .args_json((Option::<bool>::None,))
-        .max_gas()
-        .deposit(ONE_YOCTO)
-        .transact()
+        .call_function("storage_unregister", json!({"force": Option::<bool>::None}))
+        .transaction()
+        .deposit(common::ONE_YOCTO)
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?;
-    assert!(format!("{:?}", res)
-        .contains("Can't unregister the account with the positive balance without force"));
+    let error_msg = format!("{:?}", res);
+    res.assert_failure();
+    assert!(
+        error_msg.contains("Can't unregister the account with the positive balance without force")
+    );
 
+    // ft_contract tries to unregister with non-empty balance with force=false
     let res = ft_contract
-        .call("storage_unregister")
-        .args_json((Some(false),))
-        .max_gas()
-        .deposit(ONE_YOCTO)
-        .transact()
+        .call_function("storage_unregister", json!({"force": Some(false)}))
+        .transaction()
+        .deposit(common::ONE_YOCTO)
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
         .await?;
-    assert!(format!("{:?}", res)
-        .contains("Can't unregister the account with the positive balance without force"));
+    let error_msg = format!("{:?}", res);
+    res.assert_failure();
+    assert!(
+        error_msg.contains("Can't unregister the account with the positive balance without force")
+    );
 
     Ok(())
 }
 
 #[tokio::test]
-async fn close_account_force_non_empty_balance() -> anyhow::Result<()> {
+async fn close_account_force_non_empty_balance() -> testresult::TestResult<()> {
+    // Initialize the sandbox
+    let (sandbox, sandbox_network) = common::init_sandbox().await?;
+    // Initialize the contracts
     let initial_balance = U128::from(NearToken::from_near(10000).as_yoctonear());
+    let (ft_contract, _, signer) =
+        common::init_contracts(&sandbox, &sandbox_network, &initial_balance).await?;
 
-    let worker = near_workspaces::sandbox().await?;
-    let root = worker.root_account()?;
-    let (alice, _, _, _) = init_accounts(&root).await?;
-    let (ft_contract, _) = init_contracts(&worker, initial_balance, &alice).await?;
+    // Register ft_contract account
+    common::register_user(
+        &ft_contract,
+        signer.clone(),
+        &sandbox_network,
+        &ft_contract.account_id(),
+    )
+    .await?;
 
-    let res = ft_contract
-        .call("storage_unregister")
-        .args_json((Some(true),))
-        .max_gas()
-        .deposit(ONE_YOCTO)
-        .transact()
-        .await?;
-    assert!(res.is_success());
+    // ft_contract unregisters with force=true, burning all tokens
+    ft_contract
+        .call_function("storage_unregister", json!({"force": Some(true)}))
+        .transaction()
+        .deposit(common::ONE_YOCTO)
+        .with_signer(ft_contract.account_id().clone(), signer.clone())
+        .send_to(&sandbox_network)
+        .await?
+        .assert_success();
 
-    let res = ft_contract.call("ft_total_supply").view().await?;
-    assert_eq!(res.json::<U128>()?.0, 0);
+    // Check that total supply is now 0
+    let total_supply: U128 = ft_contract
+        .call_function("ft_total_supply", ())
+        .read_only()
+        .fetch_from(&sandbox_network)
+        .await?
+        .data;
+    assert_eq!(total_supply.0, 0);
 
     Ok(())
 }

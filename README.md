@@ -8,7 +8,7 @@ The contracts use NEAR SDK 5.29.1 and the pinned Rust 1.97.1 toolchain. Install 
 cargo install cargo-near --version 0.21.1 --locked --no-default-features
 ```
 
-Contract builds and integration-test fixtures compile from source; no live network account is required for tests.
+Integration tests use `near-sandbox` to run local nodes and `near-api` to sign transactions. Contract builds and integration-test fixtures compile from source; no live network account is required for tests.
 
 
 [![](https://img.shields.io/badge/⋈%20Examples-Basics-green)](https://docs.near.org/tutorials/welcome)
